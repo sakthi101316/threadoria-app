@@ -139,7 +139,7 @@ export default function CustomersScreen() {
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Ionicons name="people-outline" size={64} color={COLORS.gray} />
+            <MaterialCommunityIcons name="account-group-outline" size={64} color={COLORS.gray} />
             <Text style={styles.emptyText}>
               {searchQuery ? 'No customers found' : 'No customers yet'}
             </Text>
