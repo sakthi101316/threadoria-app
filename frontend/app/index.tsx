@@ -98,9 +98,24 @@ export default function LoginScreen() {
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.logoContainer}>
-            <Image source={{ uri: LOGO_URL }} style={styles.logo} resizeMode="contain" />
+          {/* Circular Logo Section */}
+          <View style={styles.logoSection}>
+            <LinearGradient
+              colors={['#FFFFFF', '#FFF5E6', '#FFE4C9']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.logoGradientBg}
+            >
+              <View style={styles.logoInnerCircle}>
+                <Image source={{ uri: LOGO_URL }} style={styles.logo} resizeMode="contain" />
+              </View>
+            </LinearGradient>
+            {/* Decorative rings */}
+            <View style={[styles.decorativeRing, styles.ring1]} />
+            <View style={[styles.decorativeRing, styles.ring2]} />
           </View>
+          
+          <Text style={styles.taglineLogin}>"Where Elegance Meets Perfection"</Text>
 
           <View style={styles.formCard}>
             <Text style={styles.welcomeText}>Welcome Back</Text>
