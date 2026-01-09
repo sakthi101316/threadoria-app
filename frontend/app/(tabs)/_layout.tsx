@@ -1,10 +1,11 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import { COLORS } from '../../src/constants/theme';
 import { useAuth } from '../../src/context/AuthContext';
 import { useRouter } from 'expo-router';
 import { useEffect } from 'react';
+import { View } from 'react-native';
 
 export default function TabsLayout() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -24,13 +25,15 @@ export default function TabsLayout() {
         tabBarStyle: {
           backgroundColor: COLORS.white,
           borderTopColor: COLORS.lightGray,
-          paddingBottom: 5,
-          paddingTop: 5,
-          height: 60,
+          borderTopWidth: 1,
+          paddingBottom: 8,
+          paddingTop: 8,
+          height: 65,
         },
         tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: '500',
+          fontSize: 11,
+          fontWeight: '600',
+          marginTop: 2,
         },
         headerStyle: {
           backgroundColor: COLORS.white,
@@ -39,24 +42,36 @@ export default function TabsLayout() {
         headerTitleStyle: {
           fontWeight: 'bold',
         },
+        headerShown: false,
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Dashboard',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="home" size={size} color={color} />
+          title: 'Home',
+          tabBarIcon: ({ color, focused }) => (
+            <View style={{ alignItems: 'center' }}>
+              <MaterialCommunityIcons 
+                name={focused ? "home" : "home-outline"} 
+                size={26} 
+                color={color} 
+              />
+            </View>
           ),
-          headerTitle: 'Maahis SmartBook',
         }}
       />
       <Tabs.Screen
         name="customers"
         options={{
           title: 'Customers',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="people" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <View style={{ alignItems: 'center' }}>
+              <MaterialCommunityIcons 
+                name={focused ? "account-group" : "account-group-outline"} 
+                size={26} 
+                color={color} 
+              />
+            </View>
           ),
         }}
       />
@@ -64,8 +79,14 @@ export default function TabsLayout() {
         name="orders"
         options={{
           title: 'Orders',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="receipt" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <View style={{ alignItems: 'center' }}>
+              <MaterialCommunityIcons 
+                name={focused ? "clipboard-list" : "clipboard-list-outline"} 
+                size={26} 
+                color={color} 
+              />
+            </View>
           ),
         }}
       />
@@ -73,8 +94,14 @@ export default function TabsLayout() {
         name="settings"
         options={{
           title: 'Settings',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="settings" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <View style={{ alignItems: 'center' }}>
+              <Feather 
+                name="settings" 
+                size={24} 
+                color={color} 
+              />
+            </View>
           ),
         }}
       />
