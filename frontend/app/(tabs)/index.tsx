@@ -164,10 +164,22 @@ export default function DashboardScreen() {
         }
         showsVerticalScrollIndicator={false}
       >
-        {/* Logo Section - Clean display like login page */}
-        <Animated.View style={[styles.logoSection, { transform: [{ scale: pulseAnim }] }]}>
-          <Image source={{ uri: LOGO_URL }} style={styles.logo} resizeMode="contain" />
-        </Animated.View>
+        {/* Circular Logo Section - Same as login page */}
+        <View style={styles.logoSection}>
+          <LinearGradient
+            colors={['#FFFFFF', '#FFF5E6', '#FFE4C9']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.logoGradientBg}
+          >
+            <View style={styles.logoInnerCircle}>
+              <Image source={{ uri: LOGO_URL }} style={styles.logo} resizeMode="contain" />
+            </View>
+          </LinearGradient>
+          {/* Decorative rings */}
+          <View style={[styles.decorativeRing, styles.ring1]} />
+          <View style={[styles.decorativeRing, styles.ring2]} />
+        </View>
 
         {/* Tagline */}
         <Text style={styles.tagline}>"Where Elegance Meets Perfection"</Text>
