@@ -185,10 +185,15 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: BORDER_RADIUS.md,
-    backgroundColor: COLORS.primary,
     alignItems: 'center',
     justifyContent: 'center',
     ...SHADOWS.medium,
+  },
+  addButtonInner: {
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   listContent: {
     padding: SPACING.md,
