@@ -302,29 +302,11 @@ const styles = StyleSheet.create({
   },
   logoSection: {
     alignItems: 'center',
-    marginBottom: SPACING.sm,
-    position: 'relative',
-  },
-  logoGradientBg: {
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...SHADOWS.large,
-  },
-  logoInnerCircle: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: COLORS.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
+    marginBottom: SPACING.xs,
   },
   logo: {
-    width: 130,
-    height: 130,
+    width: 220,
+    height: 120,
   },
   decorativeRing: {
     position: 'absolute',
