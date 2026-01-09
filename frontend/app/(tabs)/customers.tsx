@@ -102,7 +102,7 @@ export default function CustomersScreen() {
       />
       <View style={styles.header}>
         <View style={styles.searchContainer}>
-          <Ionicons name="search" size={20} color={COLORS.gray} />
+          <Feather name="search" size={20} color={COLORS.gray} />
           <TextInput
             style={styles.searchInput}
             placeholder="Search by name or phone..."
@@ -112,16 +112,21 @@ export default function CustomersScreen() {
           />
           {searchQuery ? (
             <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={20} color={COLORS.gray} />
+              <Feather name="x-circle" size={20} color={COLORS.gray} />
             </TouchableOpacity>
           ) : null}
         </View>
-        <TouchableOpacity
+        <LinearGradient
+          colors={['#06B6D4', '#0891B2']}
           style={styles.addButton}
-          onPress={() => router.push('/add-customer')}
         >
-          <Ionicons name="add" size={28} color={COLORS.white} />
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.addButtonInner}
+            onPress={() => router.push('/add-customer')}
+          >
+            <Feather name="user-plus" size={24} color={COLORS.white} />
+          </TouchableOpacity>
+        </LinearGradient>
       </View>
 
       <FlatList
