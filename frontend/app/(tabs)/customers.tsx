@@ -73,23 +73,23 @@ export default function CustomersScreen() {
           {item.photo ? (
             <Image source={{ uri: item.photo }} style={styles.avatarImage} />
           ) : (
-            <Ionicons name="person" size={30} color={COLORS.gray} />
+            <MaterialCommunityIcons name="account" size={30} color={COLORS.gray} />
           )}
         </View>
         <View style={styles.customerInfo}>
           <Text style={styles.customerName}>{item.name}</Text>
           <View style={styles.customerDetail}>
-            <Ionicons name="call" size={14} color={COLORS.gray} />
+            <Feather name="phone" size={14} color={COLORS.gray} />
             <Text style={styles.customerPhone}>{item.phone}</Text>
           </View>
           {item.address ? (
             <View style={styles.customerDetail}>
-              <Ionicons name="location" size={14} color={COLORS.gray} />
+              <Feather name="map-pin" size={14} color={COLORS.gray} />
               <Text style={styles.customerAddress} numberOfLines={1}>{item.address}</Text>
             </View>
           ) : null}
         </View>
-        <Ionicons name="chevron-forward" size={24} color={COLORS.gray} />
+        <Feather name="chevron-right" size={24} color={COLORS.gray} />
       </GlassCard>
     </TouchableOpacity>
   );
