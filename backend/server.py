@@ -241,7 +241,8 @@ async def create_customer(customer: CustomerCreate):
     }
     result = await db.customers.insert_one(customer_doc)
     customer_doc['id'] = str(result.inserted_id)
-    del customer_doc['_id'] if '_id' in customer_doc else None
+    if '_id' in customer_doc:
+        del customer_doc['_id']
     return CustomerResponse(**customer_doc)
 
 @api_router.get("/customers", response_model=List[CustomerResponse])
