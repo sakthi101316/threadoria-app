@@ -308,23 +308,6 @@ const styles = StyleSheet.create({
     width: 220,
     height: 120,
   },
-  decorativeRing: {
-    position: 'absolute',
-    borderWidth: 1,
-    borderRadius: 100,
-  },
-  ring1: {
-    width: 180,
-    height: 180,
-    borderColor: COLORS.gold + '30',
-    top: -10,
-  },
-  ring2: {
-    width: 200,
-    height: 200,
-    borderColor: COLORS.primary + '20',
-    top: -20,
-  },
   tagline: {
     fontSize: 14,
     fontStyle: 'italic',
