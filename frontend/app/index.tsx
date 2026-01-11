@@ -156,7 +156,18 @@ export default function LoginScreen() {
             />
           </View>
 
-          <Text style={styles.footerText}>Maahis Designer Boutique</Text>
+          {/* Powered By Footer */}
+          <View style={styles.footerContainer}>
+            <Text style={styles.footerText}>Maahis Designer Boutique</Text>
+            <View style={styles.poweredByContainer}>
+              <Text style={styles.poweredByText}>Powered by</Text>
+              <Image 
+                source={{ uri: 'https://customer-assets.emergentagent.com/job_fashion-tracker-10/artifacts/4vndu7j3_Shivam%20%281%29.png' }} 
+                style={styles.poweredByLogo} 
+                resizeMode="contain" 
+              />
+            </View>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
