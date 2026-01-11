@@ -255,8 +255,11 @@ export default function BillingScreen() {
         style={StyleSheet.absoluteFill}
       />
 
-      {/* Header */}
+      {/* Header with Back Button */}
       <View style={styles.header}>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <Feather name="arrow-left" size={24} color={COLORS.black} />
+        </TouchableOpacity>
         <Text style={styles.headerTitle}>Billing & Payments</Text>
         <TouchableOpacity style={styles.qrButton} onPress={() => setShowQRModal(true)}>
           <MaterialCommunityIcons name="qrcode-scan" size={24} color={COLORS.white} />
