@@ -1,13 +1,18 @@
-diff --git a/frontend/app/(tabs)/index.tsx b/frontend/app/(tabs)/index.tsx
-index a17dc32..9914420 100644
---- a/frontend/app/(tabs)/index.tsx
-+++ b/frontend/app/(tabs)/index.tsx
-@@ -213,7 +213,7 @@ export default function DashboardScreen() {
-           <StatCard 
-             title="Due Soon" 
-             value={stats.delivery_in_2_days} 
--            icon="calendar-clock" 
-+            icon="calendar-alert" 
-             IconComponent={MaterialCommunityIcons}
-             color={COLORS.gold}
-             gradient={['#EAB308', '#CA8A04']}
+diff --git a/model.patch b/model.patch
+index 48c6297..e69de29 100644
+--- a/model.patch
++++ b/model.patch
+@@ -1,13 +0,0 @@
+-diff --git a/frontend/app/(tabs)/index.tsx b/frontend/app/(tabs)/index.tsx
+-index a17dc32..9914420 100644
+---- a/frontend/app/(tabs)/index.tsx
+-+++ b/frontend/app/(tabs)/index.tsx
+-@@ -213,7 +213,7 @@ export default function DashboardScreen() {
+-           <StatCard 
+-             title="Due Soon" 
+-             value={stats.delivery_in_2_days} 
+--            icon="calendar-clock" 
+-+            icon="calendar-alert" 
+-             IconComponent={MaterialCommunityIcons}
+-             color={COLORS.gold}
+-             gradient={['#EAB308', '#CA8A04']}
