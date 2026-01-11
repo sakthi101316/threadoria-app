@@ -17,6 +17,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
 import { Audio } from 'expo-av';
 import { COLORS, SPACING, BORDER_RADIUS, SHADOWS } from '../src/constants/theme';
 import { GlassCard } from '../src/components/GlassCard';
