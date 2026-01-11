@@ -141,12 +141,12 @@ export default function DashboardScreen() {
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.headerButton}
-          onPress={() => {
-            logout();
+          onPress={async () => {
+            await logout();
             router.replace('/');
           }}
         >
-          <Feather name="log-out" size={22} color={COLORS.gray} />
+          <Feather name="log-out" size={22} color={COLORS.error} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Maahis SmartBook</Text>
         <TouchableOpacity 
