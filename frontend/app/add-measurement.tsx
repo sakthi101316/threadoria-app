@@ -206,44 +206,36 @@ export default function AddMeasurementScreen() {
       setStatusText('Processing...');
       console.log('Processing audio chunk from:', uri);
       
-      // For mobile, we need to use expo-file-system to read the file
-      const FileSystem = require('expo-file-system');
+      const base64Audio = await FileSystem.readAsStringAsync(uri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
       
-      try {
-        const base64Audio = await FileSystem.readAsStringAsync(uri, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
+      console.log('Base64 audio length:', base64Audio?.length || 0);
+      
+      if (base64Audio && base64Audio.length > 1000) {
+        console.log('Sending to transcription API...');
+        const result = await api.transcribeVoice(base64Audio, 'm4a');
+        console.log('Transcription result:', JSON.stringify(result));
         
-        console.log('Base64 audio length:', base64Audio?.length || 0);
-        
-        if (base64Audio && base64Audio.length > 1000) {
-          console.log('Sending to transcription API...');
-          const result = await api.transcribeVoice(base64Audio, 'm4a');
-          console.log('Transcription result:', JSON.stringify(result));
-          
-          if (result.success && result.text && result.text.trim()) {
-            const newText = result.text.trim();
-            console.log('Got text:', newText);
-            setTranscribedText(prev => {
-              const combined = prev ? `${prev} ${newText}` : newText;
-              return combined.slice(-150);
-            });
-            const filled = parseAndFillMeasurements(newText);
-            if (filled) {
-              setStatusText('✓ Field filled!');
-            } else {
-              setStatusText('Listening...');
-            }
+        if (result.success && result.text && result.text.trim()) {
+          const newText = result.text.trim();
+          console.log('Got text:', newText);
+          setTranscribedText(prev => {
+            const combined = prev ? `${prev} ${newText}` : newText;
+            return combined.slice(-150);
+          });
+          const filled = parseAndFillMeasurements(newText);
+          if (filled) {
+            setStatusText('✓ Field filled!');
           } else {
-            console.log('No text in result or empty');
             setStatusText('Listening...');
           }
         } else {
-          console.log('Audio too short, skipping');
+          console.log('No text in result or empty');
           setStatusText('Listening...');
         }
-      } catch (fileError) {
-        console.error('File read error:', fileError);
+      } else {
+        console.log('Audio too short, skipping');
         setStatusText('Listening...');
       }
     } catch (error) {
