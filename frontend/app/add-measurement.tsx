@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,16 +10,18 @@ import {
   Image,
   KeyboardAvoidingView,
   Platform,
+  Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
+import { Audio } from 'expo-av';
+import * as FileSystem from 'expo-file-system';
 import { COLORS, SPACING, BORDER_RADIUS, SHADOWS } from '../src/constants/theme';
 import { GlassCard } from '../src/components/GlassCard';
 import { GoldButton } from '../src/components/GoldButton';
-import { VoiceButton } from '../src/components/VoiceButton';
 import { api } from '../src/services/api';
 
 export default function AddMeasurementScreen() {
@@ -31,6 +33,9 @@ export default function AddMeasurementScreen() {
   const [loading, setLoading] = useState(false);
   const [referencePhotos, setReferencePhotos] = useState<string[]>([]);
   const [activeField, setActiveField] = useState<string | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recording, setRecording] = useState<Audio.Recording | null>(null);
+  const pulseAnim = useRef(new Animated.Value(1)).current;
 
   // Top measurements
   const [topMeasurements, setTopMeasurements] = useState({
@@ -82,6 +87,114 @@ export default function AddMeasurementScreen() {
     { key: 'ankle', label: 'Ankle' },
   ];
 
+  useEffect(() => {
+    if (isRecording) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, {
+            toValue: 1.3,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    } else {
+      pulseAnim.stopAnimation();
+      pulseAnim.setValue(1);
+    }
+  }, [isRecording]);
+
+  const startRecording = async (fieldKey: string) => {
+    try {
+      const permission = await Audio.requestPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert('Permission Required', 'Please grant microphone permission to use voice input.');
+        return;
+      }
+
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+      });
+
+      const { recording } = await Audio.Recording.createAsync(
+        Audio.RecordingOptionsPresets.HIGH_QUALITY
+      );
+      
+      setRecording(recording);
+      setIsRecording(true);
+      setActiveField(fieldKey);
+    } catch (error) {
+      console.error('Failed to start recording:', error);
+      Alert.alert('Error', 'Failed to start recording');
+    }
+  };
+
+  const stopRecording = async () => {
+    if (!recording || !activeField) return;
+
+    try {
+      setIsRecording(false);
+      await recording.stopAndUnloadAsync();
+      const uri = recording.getURI();
+      setRecording(null);
+
+      if (uri) {
+        // Read audio file as base64
+        const base64Audio = await FileSystem.readAsStringAsync(uri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+
+        // Send to backend for transcription
+        try {
+          const result = await api.transcribeVoice(base64Audio, 'm4a');
+          if (result.success && result.text) {
+            // Extract number from voice input
+            const number = result.text.match(/[\d.]+/)?.[0] || result.text;
+            
+            // Update the measurement field
+            if (category === 'Top') {
+              setTopMeasurements(prev => ({ ...prev, [activeField]: number }));
+            } else {
+              setBottomMeasurements(prev => ({ ...prev, [activeField]: number }));
+            }
+            
+            // Auto-move to next field
+            const currentFields = category === 'Top' ? topFields : bottomFields;
+            const currentIndex = currentFields.findIndex(f => f.key === activeField);
+            if (currentIndex < currentFields.length - 1) {
+              const nextField = currentFields[currentIndex + 1];
+              Alert.alert(
+                'Measurement Recorded',
+                `${activeField.replace(/_/g, ' ')}: ${number}"\n\nMove to next: ${nextField.label}?`,
+                [
+                  { text: 'Stop', style: 'cancel', onPress: () => setActiveField(null) },
+                  { text: 'Next', onPress: () => startRecording(nextField.key) },
+                ]
+              );
+            } else {
+              Alert.alert('Success', `${activeField.replace(/_/g, ' ')}: ${number}"`);
+              setActiveField(null);
+            }
+          } else {
+            Alert.alert('Error', 'Could not transcribe. Please try again.');
+          }
+        } catch (error) {
+          console.error('Transcription error:', error);
+          Alert.alert('Error', 'Failed to transcribe audio');
+        }
+      }
+    } catch (error) {
+      console.error('Failed to stop recording:', error);
+    }
+    setActiveField(null);
+  };
+
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -96,20 +209,6 @@ export default function AddMeasurementScreen() {
         .map(asset => `data:image/jpeg;base64,${asset.base64}`);
       setReferencePhotos([...referencePhotos, ...newPhotos]);
     }
-  };
-
-  const handleVoiceInput = (text: string) => {
-    if (!activeField) return;
-    
-    // Extract number from voice input
-    const number = text.match(/\d+\.?\d*/)?.[0] || text;
-    
-    if (category === 'Top') {
-      setTopMeasurements(prev => ({ ...prev, [activeField]: number }));
-    } else {
-      setBottomMeasurements(prev => ({ ...prev, [activeField]: number }));
-    }
-    setActiveField(null);
   };
 
   const handleSubmit = async () => {
@@ -139,7 +238,7 @@ export default function AddMeasurementScreen() {
         top_measurements: category === 'Top' ? formattedMeasurements : null,
         bottom_measurements: category === 'Bottom' ? formattedMeasurements : null,
         reference_photos: referencePhotos,
-        added_by_voice: false,
+        added_by_voice: true,
       });
 
       Alert.alert('Success', 'Measurement added successfully', [
@@ -152,31 +251,52 @@ export default function AddMeasurementScreen() {
     }
   };
 
-  const MeasurementInput = ({ field, value, onChange }: { field: { key: string; label: string }; value: string; onChange: (v: string) => void }) => (
-    <View style={styles.measurementInput}>
-      <View style={styles.inputHeader}>
-        <Text style={styles.inputLabel}>{field.label}</Text>
-        <TouchableOpacity
-          style={styles.voiceInputButton}
-          onPress={() => setActiveField(activeField === field.key ? null : field.key)}
-        >
-          <Ionicons
-            name="mic"
-            size={16}
-            color={activeField === field.key ? COLORS.primary : COLORS.gray}
+  const MeasurementInput = ({ field, value, onChange }: { 
+    field: { key: string; label: string }; 
+    value: string; 
+    onChange: (v: string) => void 
+  }) => {
+    const isActive = activeField === field.key && isRecording;
+    
+    return (
+      <View style={styles.measurementInput}>
+        <View style={styles.inputHeader}>
+          <Text style={styles.inputLabel}>{field.label}</Text>
+        </View>
+        <View style={styles.inputRow}>
+          <TextInput
+            style={[styles.input, isActive && styles.inputActive]}
+            placeholder="0"
+            placeholderTextColor={COLORS.gray}
+            value={value}
+            onChangeText={onChange}
+            keyboardType="numeric"
           />
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.voiceMiniButton,
+              isActive && styles.voiceMiniButtonActive
+            ]}
+            onPress={() => {
+              if (isActive) {
+                stopRecording();
+              } else {
+                startRecording(field.key);
+              }
+            }}
+          >
+            <Animated.View style={isActive ? { transform: [{ scale: pulseAnim }] } : {}}>
+              <MaterialCommunityIcons
+                name={isActive ? "stop" : "microphone"}
+                size={18}
+                color={isActive ? COLORS.white : COLORS.primary}
+              />
+            </Animated.View>
+          </TouchableOpacity>
+        </View>
       </View>
-      <TextInput
-        style={styles.input}
-        placeholder="0"
-        placeholderTextColor={COLORS.gray}
-        value={value}
-        onChangeText={onChange}
-        keyboardType="numeric"
-      />
-    </View>
-  );
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -188,9 +308,10 @@ export default function AddMeasurementScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.flex}
       >
+        {/* Header with Back Button */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color={COLORS.black} />
+            <Feather name="arrow-left" size={24} color={COLORS.black} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Add Measurement</Text>
           <View style={styles.headerRight} />
@@ -203,8 +324,8 @@ export default function AddMeasurementScreen() {
               style={[styles.categoryButton, category === 'Top' && styles.categoryButtonActive]}
               onPress={() => setCategory('Top')}
             >
-              <Ionicons
-                name="shirt"
+              <MaterialCommunityIcons
+                name="tshirt-crew"
                 size={20}
                 color={category === 'Top' ? COLORS.white : COLORS.gray}
               />
@@ -216,8 +337,8 @@ export default function AddMeasurementScreen() {
               style={[styles.categoryButton, category === 'Bottom' && styles.categoryButtonActive]}
               onPress={() => setCategory('Bottom')}
             >
-              <Ionicons
-                name="body"
+              <MaterialCommunityIcons
+                name="human-male"
                 size={20}
                 color={category === 'Bottom' ? COLORS.white : COLORS.gray}
               />
@@ -227,15 +348,34 @@ export default function AddMeasurementScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* Voice Input Section */}
-          {activeField && (
-            <GlassCard style={styles.voiceSection}>
-              <Text style={styles.voiceLabel}>
-                Speak measurement for: {activeField.replace(/_/g, ' ')}
-              </Text>
-              <VoiceButton onTranscription={handleVoiceInput} />
-            </GlassCard>
-          )}
+          {/* Live Voice Entry Section */}
+          <GlassCard style={styles.voiceEntryCard}>
+            <View style={styles.voiceEntryHeader}>
+              <LinearGradient
+                colors={[COLORS.primary, '#991B1B']}
+                style={styles.voiceEntryIcon}
+              >
+                <MaterialCommunityIcons name="microphone" size={28} color={COLORS.white} />
+              </LinearGradient>
+              <View>
+                <Text style={styles.voiceEntryTitle}>Live Voice Entry</Text>
+                <Text style={styles.voiceEntrySubtitle}>
+                  Tap mic icon next to any field
+                </Text>
+              </View>
+            </View>
+            {isRecording && (
+              <View style={styles.recordingIndicator}>
+                <Animated.View style={[styles.recordingDot, { transform: [{ scale: pulseAnim }] }]} />
+                <Text style={styles.recordingText}>
+                  Recording for: {activeField?.replace(/_/g, ' ')}
+                </Text>
+                <TouchableOpacity style={styles.stopButton} onPress={stopRecording}>
+                  <Text style={styles.stopButtonText}>STOP</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </GlassCard>
 
           {/* Measurements Grid */}
           <GlassCard style={styles.measurementsCard}>
@@ -245,7 +385,9 @@ export default function AddMeasurementScreen() {
                 <MeasurementInput
                   key={field.key}
                   field={field}
-                  value={category === 'Top' ? topMeasurements[field.key as keyof typeof topMeasurements] : bottomMeasurements[field.key as keyof typeof bottomMeasurements]}
+                  value={category === 'Top' 
+                    ? topMeasurements[field.key as keyof typeof topMeasurements] 
+                    : bottomMeasurements[field.key as keyof typeof bottomMeasurements]}
                   onChange={(v) => {
                     if (category === 'Top') {
                       setTopMeasurements(prev => ({ ...prev, [field.key]: v }));
@@ -274,7 +416,7 @@ export default function AddMeasurementScreen() {
                 </View>
               ))}
               <TouchableOpacity style={styles.addPhotoButton} onPress={pickImage}>
-                <Ionicons name="add" size={32} color={COLORS.gray} />
+                <Feather name="plus" size={32} color={COLORS.gray} />
               </TouchableOpacity>
             </View>
           </GlassCard>
@@ -306,10 +448,13 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.sm,
   },
   backButton: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: COLORS.white,
     alignItems: 'center',
     justifyContent: 'center',
+    ...SHADOWS.small,
   },
   headerTitle: {
     fontSize: 20,
@@ -317,7 +462,7 @@ const styles = StyleSheet.create({
     color: COLORS.black,
   },
   headerRight: {
-    width: 40,
+    width: 44,
   },
   scrollContent: {
     padding: SPACING.md,
@@ -351,16 +496,65 @@ const styles = StyleSheet.create({
   categoryTextActive: {
     color: COLORS.white,
   },
-  voiceSection: {
-    alignItems: 'center',
-    paddingVertical: SPACING.lg,
+  voiceEntryCard: {
+    padding: SPACING.md,
     marginBottom: SPACING.md,
+    borderWidth: 2,
+    borderColor: COLORS.primary + '30',
   },
-  voiceLabel: {
-    fontSize: 14,
+  voiceEntryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.md,
+  },
+  voiceEntryIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  voiceEntryTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: COLORS.black,
+  },
+  voiceEntrySubtitle: {
+    fontSize: 13,
     color: COLORS.gray,
-    marginBottom: SPACING.md,
+  },
+  recordingIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.primary + '10',
+    padding: SPACING.sm,
+    borderRadius: BORDER_RADIUS.md,
+    marginTop: SPACING.md,
+    gap: SPACING.sm,
+  },
+  recordingDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: COLORS.error,
+  },
+  recordingText: {
+    flex: 1,
+    fontSize: 14,
+    color: COLORS.primary,
+    fontWeight: '500',
     textTransform: 'capitalize',
+  },
+  stopButton: {
+    backgroundColor: COLORS.error,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.xs,
+    borderRadius: BORDER_RADIUS.sm,
+  },
+  stopButtonText: {
+    color: COLORS.white,
+    fontWeight: 'bold',
+    fontSize: 12,
   },
   measurementsCard: {
     padding: SPACING.md,
@@ -378,12 +572,9 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
   },
   measurementInput: {
-    width: '30%',
+    width: '31%',
   },
   inputHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     marginBottom: 4,
   },
   inputLabel: {
@@ -391,10 +582,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.gray,
   },
-  voiceInputButton: {
-    padding: 2,
+  inputRow: {
+    flexDirection: 'row',
+    gap: 4,
   },
   input: {
+    flex: 1,
     backgroundColor: COLORS.cream,
     borderRadius: BORDER_RADIUS.sm,
     padding: SPACING.sm,
@@ -402,6 +595,23 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.lightGray,
     textAlign: 'center',
+  },
+  inputActive: {
+    borderColor: COLORS.primary,
+    borderWidth: 2,
+  },
+  voiceMiniButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: COLORS.cream,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+  },
+  voiceMiniButtonActive: {
+    backgroundColor: COLORS.primary,
   },
   section: {
     marginBottom: SPACING.md,
