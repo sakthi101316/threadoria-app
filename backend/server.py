@@ -586,6 +586,187 @@ async def update_payment(payment_id: str, update: PaymentUpdate):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+# ========================== PAYMENT ANALYTICS ROUTES ==========================
+
+class PaymentAnalytics(BaseModel):
+    total_revenue: float
+    total_collected: float
+    total_pending: float
+    paid_count: int
+    partial_count: int
+    unpaid_count: int
+    payments: List[dict]
+
+class PaymentRecord(BaseModel):
+    id: str
+    order_id: str
+    customer_name: str
+    customer_phone: str
+    order_type: str
+    final_amount: float
+    advance_paid: float
+    balance_amount: float
+    payment_status: str
+    last_updated: datetime
+
+@api_router.get("/payments/analytics")
+async def get_payment_analytics(period: str = "all"):
+    """Get payment analytics - period can be 'today', 'week', 'month', 'all'"""
+    from datetime import timedelta
+    
+    # Define date range based on period
+    now = datetime.utcnow()
+    today = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    
+    date_filter = {}
+    if period == "today":
+        date_filter = {"last_updated": {"$gte": today}}
+    elif period == "week":
+        week_ago = today - timedelta(days=7)
+        date_filter = {"last_updated": {"$gte": week_ago}}
+    elif period == "month":
+        month_ago = today - timedelta(days=30)
+        date_filter = {"last_updated": {"$gte": month_ago}}
+    
+    # Get all payments
+    payments = await db.payments.find(date_filter).sort("last_updated", -1).to_list(1000)
+    
+    # Calculate totals
+    total_revenue = sum(p.get('final_amount', 0) for p in payments)
+    total_collected = sum(p.get('advance_paid', 0) for p in payments)
+    total_pending = sum(p.get('balance_amount', 0) for p in payments)
+    
+    paid_count = sum(1 for p in payments if p.get('payment_status') == 'paid')
+    partial_count = sum(1 for p in payments if p.get('payment_status') == 'partial')
+    unpaid_count = sum(1 for p in payments if p.get('payment_status') == 'unpaid')
+    
+    # Enrich payments with order and customer info
+    enriched_payments = []
+    for p in payments:
+        order = await db.orders.find_one({"_id": ObjectId(p['order_id'])}) if p.get('order_id') else None
+        enriched_payments.append({
+            "id": str(p['_id']),
+            "order_id": p.get('order_id', ''),
+            "customer_name": order.get('customer_name', 'Unknown') if order else 'Unknown',
+            "customer_phone": order.get('customer_phone', '') if order else '',
+            "order_type": order.get('order_type', 'N/A') if order else 'N/A',
+            "final_amount": p.get('final_amount', 0),
+            "advance_paid": p.get('advance_paid', 0),
+            "balance_amount": p.get('balance_amount', 0),
+            "payment_status": p.get('payment_status', 'unknown'),
+            "last_updated": p.get('last_updated', now).isoformat()
+        })
+    
+    return {
+        "total_revenue": total_revenue,
+        "total_collected": total_collected,
+        "total_pending": total_pending,
+        "paid_count": paid_count,
+        "partial_count": partial_count,
+        "unpaid_count": unpaid_count,
+        "payments": enriched_payments
+    }
+
+@api_router.get("/payments/all")
+async def get_all_payments(status: Optional[str] = None):
+    """Get all payments with optional status filter"""
+    query = {}
+    if status:
+        query["payment_status"] = status
+    
+    payments = await db.payments.find(query).sort("last_updated", -1).to_list(1000)
+    
+    enriched_payments = []
+    for p in payments:
+        order = await db.orders.find_one({"_id": ObjectId(p['order_id'])}) if p.get('order_id') else None
+        enriched_payments.append({
+            "id": str(p['_id']),
+            "order_id": p.get('order_id', ''),
+            "customer_name": order.get('customer_name', 'Unknown') if order else 'Unknown',
+            "customer_phone": order.get('customer_phone', '') if order else '',
+            "order_type": order.get('order_type', 'N/A') if order else 'N/A',
+            "final_amount": p.get('final_amount', 0),
+            "advance_paid": p.get('advance_paid', 0),
+            "balance_amount": p.get('balance_amount', 0),
+            "payment_status": p.get('payment_status', 'unknown'),
+            "last_updated": p.get('last_updated', datetime.utcnow()).isoformat()
+        })
+    
+    return enriched_payments
+
+@api_router.post("/payments/record-payment")
+async def record_qr_payment(order_id: str, amount: float):
+    """Record a payment made via QR code"""
+    try:
+        # Get existing payment
+        payment = await db.payments.find_one({"order_id": order_id})
+        if not payment:
+            raise HTTPException(status_code=404, detail="Payment record not found")
+        
+        # Update advance paid
+        new_advance = payment.get('advance_paid', 0) + amount
+        final_amount = payment.get('final_amount', 0)
+        balance = final_amount - new_advance
+        status = "paid" if balance <= 0 else ("partial" if new_advance > 0 else "unpaid")
+        
+        await db.payments.update_one(
+            {"order_id": order_id},
+            {"$set": {
+                "advance_paid": new_advance,
+                "balance_amount": max(0, balance),
+                "payment_status": status,
+                "last_updated": datetime.utcnow()
+            }}
+        )
+        
+        return {"success": True, "message": f"Payment of ₹{amount} recorded successfully", "new_balance": max(0, balance)}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@api_router.get("/whatsapp/payment-received/{order_id}")
+async def get_whatsapp_payment_received(order_id: str, amount: float = 0):
+    """Get WhatsApp message URL for payment received notification"""
+    try:
+        order = await db.orders.find_one({"_id": ObjectId(order_id)})
+        if not order:
+            raise HTTPException(status_code=404, detail="Order not found")
+        
+        customer = await db.customers.find_one({"_id": ObjectId(order['customer_id'])})
+        payment = await db.payments.find_one({"order_id": order_id})
+        
+        customer_name = customer.get('name', 'Customer') if customer else 'Customer'
+        customer_phone = customer.get('phone', '') if customer else ''
+        balance = payment.get('balance_amount', 0) if payment else 0
+        
+        message = f"""🌟 *Maahis Designer Boutique* 🌟
+━━━━━━━━━━━━━━━━━━━
+*Payment Received - Thank You!* 💰
+
+Dear {customer_name},
+
+We have received your payment of *₹{amount:.2f}* for your {order.get('order_type', 'order')}.
+
+{'✅ *Payment Complete!* Your order is fully paid.' if balance <= 0 else f'📋 *Remaining Balance:* ₹{balance:.2f}'}
+
+━━━━━━━━━━━━━━━━━━━
+Thank you for your payment! ✨
+*Maahis Designer Boutique*
+"Where Elegance Meets Perfection"
+"""
+        
+        import urllib.parse
+        encoded_message = urllib.parse.quote(message)
+        
+        phone = customer_phone.replace(' ', '').replace('-', '').replace('+', '')
+        if not phone.startswith('91') and len(phone) == 10:
+            phone = '91' + phone
+        
+        whatsapp_url = f"https://wa.me/{phone}?text={encoded_message}"
+        
+        return {"url": whatsapp_url, "message": message}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
 # ========================== DASHBOARD ROUTES ==========================
 
 @api_router.get("/dashboard/stats", response_model=DashboardStats)
