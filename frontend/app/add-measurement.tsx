@@ -11,6 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Animated,
+  Keyboard,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -18,7 +19,6 @@ import { Ionicons, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import { Audio } from 'expo-av';
-import * as FileSystem from 'expo-file-system';
 import { COLORS, SPACING, BORDER_RADIUS, SHADOWS } from '../src/constants/theme';
 import { GlassCard } from '../src/components/GlassCard';
 import { GoldButton } from '../src/components/GoldButton';
@@ -69,11 +69,12 @@ export default function AddMeasurementScreen() {
   const [category, setCategory] = useState<'Top' | 'Bottom'>('Top');
   const [loading, setLoading] = useState(false);
   const [referencePhotos, setReferencePhotos] = useState<string[]>([]);
-  const [isRecording, setIsRecording] = useState(false);
-  const [recording, setRecording] = useState<Audio.Recording | null>(null);
+  const [isListening, setIsListening] = useState(false);
+  const [currentRecording, setCurrentRecording] = useState<Audio.Recording | null>(null);
   const [transcribedText, setTranscribedText] = useState('');
-  const [filledFields, setFilledFields] = useState<string[]>([]);
+  const [lastFilledField, setLastFilledField] = useState('');
   const pulseAnim = useRef(new Animated.Value(1)).current;
+  const recordingInterval = useRef<NodeJS.Timeout | null>(null);
 
   // Top measurements
   const [topMeasurements, setTopMeasurements] = useState({
@@ -126,17 +127,17 @@ export default function AddMeasurementScreen() {
   ];
 
   useEffect(() => {
-    if (isRecording) {
+    if (isListening) {
       Animated.loop(
         Animated.sequence([
           Animated.timing(pulseAnim, {
-            toValue: 1.2,
-            duration: 600,
+            toValue: 1.15,
+            duration: 800,
             useNativeDriver: true,
           }),
           Animated.timing(pulseAnim, {
             toValue: 1,
-            duration: 600,
+            duration: 800,
             useNativeDriver: true,
           }),
         ])
@@ -145,45 +146,57 @@ export default function AddMeasurementScreen() {
       pulseAnim.stopAnimation();
       pulseAnim.setValue(1);
     }
-  }, [isRecording]);
+    
+    return () => {
+      if (recordingInterval.current) {
+        clearInterval(recordingInterval.current);
+      }
+    };
+  }, [isListening]);
 
   // Parse voice input to extract field-value pairs
-  const parseVoiceInput = (text: string) => {
+  const parseAndFillMeasurements = (text: string) => {
     const lowerText = text.toLowerCase();
-    const results: { field: string; value: string; label: string }[] = [];
+    let filled = false;
+    let lastField = '';
     
-    // Split by common separators
-    const segments = lowerText.split(/[,\.\n]+/);
-    
-    for (const segment of segments) {
-      // Try to match field name and number
-      for (const [spoken, fieldKey] of Object.entries(FIELD_MAPPINGS)) {
-        if (segment.includes(spoken)) {
-          // Extract number after the field name
-          const numberMatch = segment.match(/(\d+\.?\d*)/);
-          if (numberMatch) {
-            const field = topFields.find(f => f.key === fieldKey) || bottomFields.find(f => f.key === fieldKey);
-            if (field) {
-              results.push({
-                field: fieldKey,
-                value: numberMatch[1],
-                label: field.label
-              });
-            }
+    // Try to match field name and number
+    for (const [spoken, fieldKey] of Object.entries(FIELD_MAPPINGS)) {
+      if (lowerText.includes(spoken)) {
+        // Find number after or near the field name
+        const regex = new RegExp(`${spoken}[^0-9]*([0-9]+\\.?[0-9]*)`, 'i');
+        const match = lowerText.match(regex);
+        
+        if (match && match[1]) {
+          const value = match[1];
+          
+          // Check if field belongs to current category
+          if (category === 'Top' && fieldKey in topMeasurements) {
+            setTopMeasurements(prev => ({ ...prev, [fieldKey]: value }));
+            lastField = fieldKey;
+            filled = true;
+          } else if (category === 'Bottom' && fieldKey in bottomMeasurements) {
+            setBottomMeasurements(prev => ({ ...prev, [fieldKey]: value }));
+            lastField = fieldKey;
+            filled = true;
           }
-          break;
         }
       }
     }
     
-    return results;
+    if (filled) {
+      setLastFilledField(lastField);
+      setTimeout(() => setLastFilledField(''), 2000);
+    }
+    
+    return filled;
   };
 
-  const startRecording = async () => {
+  const startContinuousListening = async () => {
     try {
       const permission = await Audio.requestPermissionsAsync();
       if (!permission.granted) {
-        Alert.alert('Permission Required', 'Please grant microphone permission to use voice input.');
+        Alert.alert('Permission Required', 'Please grant microphone permission.');
         return;
       }
 
@@ -192,83 +205,109 @@ export default function AddMeasurementScreen() {
         playsInSilentModeIOS: true,
       });
 
-      const { recording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
-      );
-      
-      setRecording(recording);
-      setIsRecording(true);
+      setIsListening(true);
       setTranscribedText('');
-      setFilledFields([]);
+      
+      // Start first recording
+      await startNewRecording();
+      
+      // Set up interval to process audio every 3 seconds
+      recordingInterval.current = setInterval(async () => {
+        await processAndRestartRecording();
+      }, 3000);
+      
     } catch (error) {
-      console.error('Failed to start recording:', error);
-      Alert.alert('Error', 'Failed to start recording');
+      console.error('Failed to start listening:', error);
+      Alert.alert('Error', 'Failed to start voice input. Please try again.');
     }
   };
 
-  const stopRecording = async () => {
-    if (!recording) return;
-
+  const startNewRecording = async () => {
     try {
-      setIsRecording(false);
-      await recording.stopAndUnloadAsync();
-      const uri = recording.getURI();
-      setRecording(null);
+      const { recording } = await Audio.Recording.createAsync(
+        Audio.RecordingOptionsPresets.HIGH_QUALITY
+      );
+      setCurrentRecording(recording);
+    } catch (error) {
+      console.error('Failed to start recording:', error);
+    }
+  };
 
+  const processAndRestartRecording = async () => {
+    if (!currentRecording) return;
+    
+    try {
+      // Stop current recording
+      await currentRecording.stopAndUnloadAsync();
+      const uri = currentRecording.getURI();
+      
+      // Start new recording immediately
+      await startNewRecording();
+      
       if (uri) {
-        // Read audio file as base64
-        const base64Audio = await FileSystem.readAsStringAsync(uri, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
-
-        // Send to backend for transcription
-        try {
-          const result = await api.transcribeVoice(base64Audio, 'm4a');
-          if (result.success && result.text) {
-            setTranscribedText(result.text);
-            
-            // Parse the transcribed text
-            const parsed = parseVoiceInput(result.text);
-            
-            if (parsed.length > 0) {
-              const newFilledFields: string[] = [];
-              
-              // Update measurements based on parsed values
-              parsed.forEach(({ field, value, label }) => {
-                if (category === 'Top' && field in topMeasurements) {
-                  setTopMeasurements(prev => ({ ...prev, [field]: value }));
-                  newFilledFields.push(label);
-                } else if (category === 'Bottom' && field in bottomMeasurements) {
-                  setBottomMeasurements(prev => ({ ...prev, [field]: value }));
-                  newFilledFields.push(label);
-                }
-              });
-              
-              setFilledFields(newFilledFields);
-              
-              Alert.alert(
-                'Measurements Added',
-                `Filled ${parsed.length} field(s):\n${parsed.map(p => `${p.label}: ${p.value}"`).join('\n')}`,
-                [{ text: 'OK' }]
-              );
-            } else {
-              Alert.alert(
-                'Voice Input',
-                `Transcribed: "${result.text}"\n\nCouldn't identify measurements. Try saying:\n"Full length 42, shoulder 14, bust 36"`,
-                [{ text: 'Try Again', onPress: startRecording }, { text: 'OK' }]
-              );
-            }
-          } else {
-            Alert.alert('Error', 'Could not transcribe. Please try again.');
-          }
-        } catch (error) {
-          console.error('Transcription error:', error);
-          Alert.alert('Error', 'Failed to transcribe audio');
-        }
+        // Process the audio in background
+        processAudio(uri);
       }
     } catch (error) {
-      console.error('Failed to stop recording:', error);
-      Alert.alert('Error', 'Failed to stop recording');
+      console.error('Error processing recording:', error);
+    }
+  };
+
+  const processAudio = async (uri: string) => {
+    try {
+      // Read file as base64 using fetch
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64data = reader.result as string;
+        const base64Audio = base64data.split(',')[1]; // Remove data:audio/...;base64, prefix
+        
+        if (base64Audio) {
+          try {
+            const result = await api.transcribeVoice(base64Audio, 'm4a');
+            if (result.success && result.text && result.text.trim()) {
+              setTranscribedText(prev => {
+                const newText = prev ? `${prev} ${result.text}` : result.text;
+                return newText.slice(-200); // Keep last 200 chars
+              });
+              
+              // Parse and fill measurements
+              parseAndFillMeasurements(result.text);
+            }
+          } catch (error) {
+            console.error('Transcription error:', error);
+          }
+        }
+      };
+      reader.readAsDataURL(blob);
+    } catch (error) {
+      console.error('Error reading audio file:', error);
+    }
+  };
+
+  const stopListening = async () => {
+    setIsListening(false);
+    
+    if (recordingInterval.current) {
+      clearInterval(recordingInterval.current);
+      recordingInterval.current = null;
+    }
+    
+    if (currentRecording) {
+      try {
+        await currentRecording.stopAndUnloadAsync();
+        const uri = currentRecording.getURI();
+        setCurrentRecording(null);
+        
+        // Process final recording
+        if (uri) {
+          await processAudio(uri);
+        }
+      } catch (error) {
+        console.error('Error stopping recording:', error);
+      }
     }
   };
 
@@ -333,7 +372,7 @@ export default function AddMeasurementScreen() {
     value: string; 
     onChange: (v: string) => void 
   }) => {
-    const isHighlighted = filledFields.includes(field.label);
+    const isHighlighted = lastFilledField === field.key;
     
     return (
       <View style={styles.measurementInput}>
@@ -369,7 +408,10 @@ export default function AddMeasurementScreen() {
           <View style={styles.headerRight} />
         </View>
 
-        <ScrollView contentContainerStyle={styles.scrollContent}>
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
           {/* Category Toggle */}
           <View style={styles.categoryToggle}>
             <TouchableOpacity
@@ -400,27 +442,30 @@ export default function AddMeasurementScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* Single Voice Entry Button */}
-          <GlassCard style={styles.voiceEntryCard}>
-            <Text style={styles.voiceTitle}>Voice Entry</Text>
+          {/* Voice Entry Card */}
+          <GlassCard style={[styles.voiceCard, isListening && styles.voiceCardActive]}>
+            <Text style={styles.voiceTitle}>
+              {isListening ? 'Listening...' : 'Voice Entry'}
+            </Text>
             <Text style={styles.voiceInstructions}>
-              Tap the button and say measurements like:{'\n'}
-              "Full length 42, shoulder 14, bust 36"
+              {isListening 
+                ? 'Say: "Full length 42, shoulder 14, bust 36"' 
+                : 'Tap to start speaking measurements'}
             </Text>
             
             <TouchableOpacity
               style={styles.mainVoiceButton}
-              onPress={isRecording ? stopRecording : startRecording}
+              onPress={isListening ? stopListening : startContinuousListening}
               activeOpacity={0.8}
             >
               <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
                 <LinearGradient
-                  colors={isRecording ? ['#EF4444', '#DC2626'] : [COLORS.primary, '#991B1B']}
+                  colors={isListening ? ['#EF4444', '#DC2626'] : [COLORS.primary, '#991B1B']}
                   style={styles.voiceButtonGradient}
                 >
                   <MaterialCommunityIcons
-                    name={isRecording ? "stop" : "microphone"}
-                    size={40}
+                    name={isListening ? "stop" : "microphone"}
+                    size={44}
                     color={COLORS.white}
                   />
                 </LinearGradient>
@@ -428,7 +473,7 @@ export default function AddMeasurementScreen() {
             </TouchableOpacity>
             
             <Text style={styles.voiceStatus}>
-              {isRecording ? 'Listening... Tap to stop' : 'Tap to start voice entry'}
+              {isListening ? 'Tap to STOP' : 'Tap to START'}
             </Text>
 
             {transcribedText ? (
@@ -558,12 +603,16 @@ const styles = StyleSheet.create({
   categoryTextActive: {
     color: COLORS.white,
   },
-  voiceEntryCard: {
+  voiceCard: {
     alignItems: 'center',
     padding: SPACING.lg,
     marginBottom: SPACING.md,
     borderWidth: 2,
-    borderColor: COLORS.primary + '30',
+    borderColor: COLORS.lightGray,
+  },
+  voiceCardActive: {
+    borderColor: COLORS.error,
+    backgroundColor: 'rgba(239, 68, 68, 0.05)',
   },
   voiceTitle: {
     fontSize: 20,
@@ -575,7 +624,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: COLORS.gray,
     textAlign: 'center',
-    lineHeight: 20,
     marginBottom: SPACING.lg,
   },
   mainVoiceButton: {
@@ -592,7 +640,7 @@ const styles = StyleSheet.create({
   voiceStatus: {
     fontSize: 14,
     color: COLORS.gray,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   transcribedBox: {
     backgroundColor: COLORS.cream,
@@ -647,7 +695,7 @@ const styles = StyleSheet.create({
   inputHighlighted: {
     borderColor: COLORS.success,
     borderWidth: 2,
-    backgroundColor: COLORS.success + '10',
+    backgroundColor: COLORS.success + '20',
   },
   section: {
     marginBottom: SPACING.md,
