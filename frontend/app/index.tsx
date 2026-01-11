@@ -299,10 +299,29 @@ const styles = StyleSheet.create({
   loginButton: {
     marginTop: SPACING.lg,
   },
+  footerContainer: {
+    alignItems: 'center',
+    marginTop: SPACING.xl,
+    paddingBottom: SPACING.lg,
+  },
   footerText: {
     textAlign: 'center',
     color: COLORS.gray,
     fontSize: 14,
-    marginTop: SPACING.xl,
+    marginBottom: SPACING.md,
+  },
+  poweredByContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: SPACING.sm,
+  },
+  poweredByText: {
+    fontSize: 12,
+    color: COLORS.gray,
+  },
+  poweredByLogo: {
+    width: 100,
+    height: 40,
   },
 });
