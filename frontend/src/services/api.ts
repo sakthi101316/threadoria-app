@@ -155,6 +155,37 @@ class ApiService {
     });
   }
 
+  // Payment Analytics
+  async getPaymentAnalytics(period: string = 'all') {
+    return this.request<{
+      total_revenue: number;
+      total_collected: number;
+      total_pending: number;
+      paid_count: number;
+      partial_count: number;
+      unpaid_count: number;
+      payments: any[];
+    }>(`/payments/analytics?period=${period}`);
+  }
+
+  async getAllPayments(status?: string) {
+    const query = status ? `?status=${status}` : '';
+    return this.request<any[]>(`/payments/all${query}`);
+  }
+
+  async recordQRPayment(orderId: string, amount: number) {
+    return this.request<{ success: boolean; message: string; new_balance: number }>(
+      `/payments/record-payment?order_id=${orderId}&amount=${amount}`,
+      { method: 'POST' }
+    );
+  }
+
+  async getWhatsAppPaymentReceived(orderId: string, amount: number) {
+    return this.request<{ url: string; message: string }>(
+      `/whatsapp/payment-received/${orderId}?amount=${amount}`
+    );
+  }
+
   // Dashboard
   async getDashboardStats() {
     return this.request<{
