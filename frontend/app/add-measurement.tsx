@@ -204,22 +204,16 @@ export default function AddMeasurementScreen() {
   const processAudioChunk = async (uri: string) => {
     try {
       setStatusText('Processing...');
-      console.log('Processing audio chunk from:', uri);
       
       const base64Audio = await FileSystem.readAsStringAsync(uri, {
-        encoding: FileSystem.EncodingType.Base64,
+        encoding: 'base64',
       });
       
-      console.log('Base64 audio length:', base64Audio?.length || 0);
-      
       if (base64Audio && base64Audio.length > 1000) {
-        console.log('Sending to transcription API...');
         const result = await api.transcribeVoice(base64Audio, 'm4a');
-        console.log('Transcription result:', JSON.stringify(result));
         
         if (result.success && result.text && result.text.trim()) {
           const newText = result.text.trim();
-          console.log('Got text:', newText);
           setTranscribedText(prev => {
             const combined = prev ? `${prev} ${newText}` : newText;
             return combined.slice(-150);
@@ -231,11 +225,9 @@ export default function AddMeasurementScreen() {
             setStatusText('Listening...');
           }
         } else {
-          console.log('No text in result or empty');
           setStatusText('Listening...');
         }
       } else {
-        console.log('Audio too short, skipping');
         setStatusText('Listening...');
       }
     } catch (error) {
