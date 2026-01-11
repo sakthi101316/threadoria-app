@@ -24,6 +24,43 @@ import { GlassCard } from '../src/components/GlassCard';
 import { GoldButton } from '../src/components/GoldButton';
 import { api } from '../src/services/api';
 
+// Field name mappings for voice recognition
+const FIELD_MAPPINGS: { [key: string]: string } = {
+  'full length': 'full_length',
+  'full': 'full_length',
+  'length': 'full_length',
+  'shoulder': 'shoulder',
+  'shoulders': 'shoulder',
+  'upper chest': 'upper_chest',
+  'chest': 'upper_chest',
+  'bust': 'bust',
+  'waist': 'waist',
+  'sleeve length': 'sleeve_length',
+  'sleeve': 'sleeve_length',
+  'sleeves': 'sleeve_length',
+  'sleeve round': 'sleeve_round',
+  'arm hole': 'arm_hole',
+  'armhole': 'arm_hole',
+  'biceps': 'biceps',
+  'bicep': 'biceps',
+  'dot point': 'dot_point',
+  'dot': 'dot_point',
+  'dot to dot': 'dot_to_dot',
+  'slit length': 'slit_length',
+  'slit': 'slit_length',
+  'seat round': 'seat_round',
+  'seat': 'seat_round',
+  'hip round': 'hip_round',
+  'hip': 'hip_round',
+  'hips': 'hip_round',
+  'thighs': 'thighs',
+  'thigh': 'thighs',
+  'knees': 'knees',
+  'knee': 'knees',
+  'ankle': 'ankle',
+  'ankles': 'ankle',
+};
+
 export default function AddMeasurementScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
@@ -32,9 +69,10 @@ export default function AddMeasurementScreen() {
   const [category, setCategory] = useState<'Top' | 'Bottom'>('Top');
   const [loading, setLoading] = useState(false);
   const [referencePhotos, setReferencePhotos] = useState<string[]>([]);
-  const [activeField, setActiveField] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
+  const [transcribedText, setTranscribedText] = useState('');
+  const [filledFields, setFilledFields] = useState<string[]>([]);
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   // Top measurements
@@ -92,13 +130,13 @@ export default function AddMeasurementScreen() {
       Animated.loop(
         Animated.sequence([
           Animated.timing(pulseAnim, {
-            toValue: 1.3,
-            duration: 500,
+            toValue: 1.2,
+            duration: 600,
             useNativeDriver: true,
           }),
           Animated.timing(pulseAnim, {
             toValue: 1,
-            duration: 500,
+            duration: 600,
             useNativeDriver: true,
           }),
         ])
@@ -109,7 +147,39 @@ export default function AddMeasurementScreen() {
     }
   }, [isRecording]);
 
-  const startRecording = async (fieldKey: string) => {
+  // Parse voice input to extract field-value pairs
+  const parseVoiceInput = (text: string) => {
+    const lowerText = text.toLowerCase();
+    const results: { field: string; value: string; label: string }[] = [];
+    
+    // Split by common separators
+    const segments = lowerText.split(/[,\.\n]+/);
+    
+    for (const segment of segments) {
+      // Try to match field name and number
+      for (const [spoken, fieldKey] of Object.entries(FIELD_MAPPINGS)) {
+        if (segment.includes(spoken)) {
+          // Extract number after the field name
+          const numberMatch = segment.match(/(\d+\.?\d*)/);
+          if (numberMatch) {
+            const field = topFields.find(f => f.key === fieldKey) || bottomFields.find(f => f.key === fieldKey);
+            if (field) {
+              results.push({
+                field: fieldKey,
+                value: numberMatch[1],
+                label: field.label
+              });
+            }
+          }
+          break;
+        }
+      }
+    }
+    
+    return results;
+  };
+
+  const startRecording = async () => {
     try {
       const permission = await Audio.requestPermissionsAsync();
       if (!permission.granted) {
@@ -128,7 +198,8 @@ export default function AddMeasurementScreen() {
       
       setRecording(recording);
       setIsRecording(true);
-      setActiveField(fieldKey);
+      setTranscribedText('');
+      setFilledFields([]);
     } catch (error) {
       console.error('Failed to start recording:', error);
       Alert.alert('Error', 'Failed to start recording');
@@ -136,7 +207,7 @@ export default function AddMeasurementScreen() {
   };
 
   const stopRecording = async () => {
-    if (!recording || !activeField) return;
+    if (!recording) return;
 
     try {
       setIsRecording(false);
@@ -154,32 +225,38 @@ export default function AddMeasurementScreen() {
         try {
           const result = await api.transcribeVoice(base64Audio, 'm4a');
           if (result.success && result.text) {
-            // Extract number from voice input
-            const number = result.text.match(/[\d.]+/)?.[0] || result.text;
+            setTranscribedText(result.text);
             
-            // Update the measurement field
-            if (category === 'Top') {
-              setTopMeasurements(prev => ({ ...prev, [activeField]: number }));
-            } else {
-              setBottomMeasurements(prev => ({ ...prev, [activeField]: number }));
-            }
+            // Parse the transcribed text
+            const parsed = parseVoiceInput(result.text);
             
-            // Auto-move to next field
-            const currentFields = category === 'Top' ? topFields : bottomFields;
-            const currentIndex = currentFields.findIndex(f => f.key === activeField);
-            if (currentIndex < currentFields.length - 1) {
-              const nextField = currentFields[currentIndex + 1];
+            if (parsed.length > 0) {
+              const newFilledFields: string[] = [];
+              
+              // Update measurements based on parsed values
+              parsed.forEach(({ field, value, label }) => {
+                if (category === 'Top' && field in topMeasurements) {
+                  setTopMeasurements(prev => ({ ...prev, [field]: value }));
+                  newFilledFields.push(label);
+                } else if (category === 'Bottom' && field in bottomMeasurements) {
+                  setBottomMeasurements(prev => ({ ...prev, [field]: value }));
+                  newFilledFields.push(label);
+                }
+              });
+              
+              setFilledFields(newFilledFields);
+              
               Alert.alert(
-                'Measurement Recorded',
-                `${activeField.replace(/_/g, ' ')}: ${number}"\n\nMove to next: ${nextField.label}?`,
-                [
-                  { text: 'Stop', style: 'cancel', onPress: () => setActiveField(null) },
-                  { text: 'Next', onPress: () => startRecording(nextField.key) },
-                ]
+                'Measurements Added',
+                `Filled ${parsed.length} field(s):\n${parsed.map(p => `${p.label}: ${p.value}"`).join('\n')}`,
+                [{ text: 'OK' }]
               );
             } else {
-              Alert.alert('Success', `${activeField.replace(/_/g, ' ')}: ${number}"`);
-              setActiveField(null);
+              Alert.alert(
+                'Voice Input',
+                `Transcribed: "${result.text}"\n\nCouldn't identify measurements. Try saying:\n"Full length 42, shoulder 14, bust 36"`,
+                [{ text: 'Try Again', onPress: startRecording }, { text: 'OK' }]
+              );
             }
           } else {
             Alert.alert('Error', 'Could not transcribe. Please try again.');
@@ -191,8 +268,8 @@ export default function AddMeasurementScreen() {
       }
     } catch (error) {
       console.error('Failed to stop recording:', error);
+      Alert.alert('Error', 'Failed to stop recording');
     }
-    setActiveField(null);
   };
 
   const pickImage = async () => {
@@ -256,44 +333,19 @@ export default function AddMeasurementScreen() {
     value: string; 
     onChange: (v: string) => void 
   }) => {
-    const isActive = activeField === field.key && isRecording;
+    const isHighlighted = filledFields.includes(field.label);
     
     return (
       <View style={styles.measurementInput}>
-        <View style={styles.inputHeader}>
-          <Text style={styles.inputLabel}>{field.label}</Text>
-        </View>
-        <View style={styles.inputRow}>
-          <TextInput
-            style={[styles.input, isActive && styles.inputActive]}
-            placeholder="0"
-            placeholderTextColor={COLORS.gray}
-            value={value}
-            onChangeText={onChange}
-            keyboardType="numeric"
-          />
-          <TouchableOpacity
-            style={[
-              styles.voiceMiniButton,
-              isActive && styles.voiceMiniButtonActive
-            ]}
-            onPress={() => {
-              if (isActive) {
-                stopRecording();
-              } else {
-                startRecording(field.key);
-              }
-            }}
-          >
-            <Animated.View style={isActive ? { transform: [{ scale: pulseAnim }] } : {}}>
-              <MaterialCommunityIcons
-                name={isActive ? "stop" : "microphone"}
-                size={18}
-                color={isActive ? COLORS.white : COLORS.primary}
-              />
-            </Animated.View>
-          </TouchableOpacity>
-        </View>
+        <Text style={styles.inputLabel}>{field.label}</Text>
+        <TextInput
+          style={[styles.input, isHighlighted && styles.inputHighlighted]}
+          placeholder="0"
+          placeholderTextColor={COLORS.gray}
+          value={value}
+          onChangeText={onChange}
+          keyboardType="numeric"
+        />
       </View>
     );
   };
@@ -348,38 +400,48 @@ export default function AddMeasurementScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* Live Voice Entry Section */}
+          {/* Single Voice Entry Button */}
           <GlassCard style={styles.voiceEntryCard}>
-            <View style={styles.voiceEntryHeader}>
-              <LinearGradient
-                colors={[COLORS.primary, '#991B1B']}
-                style={styles.voiceEntryIcon}
-              >
-                <MaterialCommunityIcons name="microphone" size={28} color={COLORS.white} />
-              </LinearGradient>
-              <View>
-                <Text style={styles.voiceEntryTitle}>Live Voice Entry</Text>
-                <Text style={styles.voiceEntrySubtitle}>
-                  Tap mic icon next to any field
-                </Text>
+            <Text style={styles.voiceTitle}>Voice Entry</Text>
+            <Text style={styles.voiceInstructions}>
+              Tap the button and say measurements like:{'\n'}
+              "Full length 42, shoulder 14, bust 36"
+            </Text>
+            
+            <TouchableOpacity
+              style={styles.mainVoiceButton}
+              onPress={isRecording ? stopRecording : startRecording}
+              activeOpacity={0.8}
+            >
+              <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
+                <LinearGradient
+                  colors={isRecording ? ['#EF4444', '#DC2626'] : [COLORS.primary, '#991B1B']}
+                  style={styles.voiceButtonGradient}
+                >
+                  <MaterialCommunityIcons
+                    name={isRecording ? "stop" : "microphone"}
+                    size={40}
+                    color={COLORS.white}
+                  />
+                </LinearGradient>
+              </Animated.View>
+            </TouchableOpacity>
+            
+            <Text style={styles.voiceStatus}>
+              {isRecording ? 'Listening... Tap to stop' : 'Tap to start voice entry'}
+            </Text>
+
+            {transcribedText ? (
+              <View style={styles.transcribedBox}>
+                <Text style={styles.transcribedLabel}>Heard:</Text>
+                <Text style={styles.transcribedText}>"{transcribedText}"</Text>
               </View>
-            </View>
-            {isRecording && (
-              <View style={styles.recordingIndicator}>
-                <Animated.View style={[styles.recordingDot, { transform: [{ scale: pulseAnim }] }]} />
-                <Text style={styles.recordingText}>
-                  Recording for: {activeField?.replace(/_/g, ' ')}
-                </Text>
-                <TouchableOpacity style={styles.stopButton} onPress={stopRecording}>
-                  <Text style={styles.stopButtonText}>STOP</Text>
-                </TouchableOpacity>
-              </View>
-            )}
+            ) : null}
           </GlassCard>
 
           {/* Measurements Grid */}
           <GlassCard style={styles.measurementsCard}>
-            <Text style={styles.sectionTitle}>{category} Measurements</Text>
+            <Text style={styles.sectionTitle}>{category} Measurements (inches)</Text>
             <View style={styles.measurementsGrid}>
               {(category === 'Top' ? topFields : bottomFields).map((field) => (
                 <MeasurementInput
@@ -497,64 +559,57 @@ const styles = StyleSheet.create({
     color: COLORS.white,
   },
   voiceEntryCard: {
-    padding: SPACING.md,
+    alignItems: 'center',
+    padding: SPACING.lg,
     marginBottom: SPACING.md,
     borderWidth: 2,
     borderColor: COLORS.primary + '30',
   },
-  voiceEntryHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.md,
-  },
-  voiceEntryIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  voiceEntryTitle: {
-    fontSize: 18,
+  voiceTitle: {
+    fontSize: 20,
     fontWeight: 'bold',
     color: COLORS.black,
+    marginBottom: SPACING.xs,
   },
-  voiceEntrySubtitle: {
+  voiceInstructions: {
     fontSize: 13,
     color: COLORS.gray,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: SPACING.lg,
   },
-  recordingIndicator: {
-    flexDirection: 'row',
+  mainVoiceButton: {
+    marginBottom: SPACING.md,
+  },
+  voiceButtonGradient: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     alignItems: 'center',
-    backgroundColor: COLORS.primary + '10',
-    padding: SPACING.sm,
+    justifyContent: 'center',
+    ...SHADOWS.large,
+  },
+  voiceStatus: {
+    fontSize: 14,
+    color: COLORS.gray,
+    fontWeight: '500',
+  },
+  transcribedBox: {
+    backgroundColor: COLORS.cream,
+    padding: SPACING.md,
     borderRadius: BORDER_RADIUS.md,
     marginTop: SPACING.md,
-    gap: SPACING.sm,
+    width: '100%',
   },
-  recordingDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: COLORS.error,
-  },
-  recordingText: {
-    flex: 1,
-    fontSize: 14,
-    color: COLORS.primary,
-    fontWeight: '500',
-    textTransform: 'capitalize',
-  },
-  stopButton: {
-    backgroundColor: COLORS.error,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.xs,
-    borderRadius: BORDER_RADIUS.sm,
-  },
-  stopButtonText: {
-    color: COLORS.white,
-    fontWeight: 'bold',
+  transcribedLabel: {
     fontSize: 12,
+    color: COLORS.gray,
+    marginBottom: 4,
+  },
+  transcribedText: {
+    fontSize: 14,
+    color: COLORS.black,
+    fontStyle: 'italic',
   },
   measurementsCard: {
     padding: SPACING.md,
@@ -574,44 +629,25 @@ const styles = StyleSheet.create({
   measurementInput: {
     width: '31%',
   },
-  inputHeader: {
-    marginBottom: 4,
-  },
   inputLabel: {
     fontSize: 10,
     fontWeight: '600',
     color: COLORS.gray,
-  },
-  inputRow: {
-    flexDirection: 'row',
-    gap: 4,
+    marginBottom: 4,
   },
   input: {
-    flex: 1,
     backgroundColor: COLORS.cream,
     borderRadius: BORDER_RADIUS.sm,
     padding: SPACING.sm,
-    fontSize: 14,
+    fontSize: 16,
     borderWidth: 1,
     borderColor: COLORS.lightGray,
     textAlign: 'center',
   },
-  inputActive: {
-    borderColor: COLORS.primary,
+  inputHighlighted: {
+    borderColor: COLORS.success,
     borderWidth: 2,
-  },
-  voiceMiniButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: COLORS.cream,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: COLORS.primary,
-  },
-  voiceMiniButtonActive: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.success + '10',
   },
   section: {
     marginBottom: SPACING.md,
