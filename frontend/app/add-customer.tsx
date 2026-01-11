@@ -293,10 +293,13 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.sm,
   },
   backButton: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: COLORS.white,
     alignItems: 'center',
     justifyContent: 'center',
+    ...SHADOWS.small,
   },
   headerTitle: {
     fontSize: 20,
