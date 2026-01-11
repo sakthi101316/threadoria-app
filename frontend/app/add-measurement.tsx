@@ -205,8 +205,20 @@ export default function AddMeasurementScreen() {
     try {
       setStatusText('Processing...');
       
-      const base64Audio = await FileSystem.readAsStringAsync(uri, {
-        encoding: 'base64',
+      // Use fetch to read the file as blob, then convert to base64
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      
+      const base64Audio = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = reader.result as string;
+          // Remove the data URL prefix to get just base64
+          const base64 = result.split(',')[1] || result;
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
       });
       
       if (base64Audio && base64Audio.length > 1000) {
