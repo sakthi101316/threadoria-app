@@ -213,7 +213,7 @@ export default function DashboardScreen() {
           <StatCard 
             title="Due Soon" 
             value={stats.delivery_in_2_days} 
-            icon="calendar-clock" 
+            icon="calendar-alert" 
             IconComponent={MaterialCommunityIcons}
             color={COLORS.gold}
             gradient={['#EAB308', '#CA8A04']}
