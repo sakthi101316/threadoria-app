@@ -31,7 +31,7 @@ export default function TabsLayout() {
           height: 65,
         },
         tabBarLabelStyle: {
-          fontSize: 11,
+          fontSize: 10,
           fontWeight: '600',
           marginTop: 2,
         },
@@ -50,13 +50,11 @@ export default function TabsLayout() {
         options={{
           title: 'Home',
           tabBarIcon: ({ color, focused }) => (
-            <View style={{ alignItems: 'center' }}>
-              <MaterialCommunityIcons 
-                name={focused ? "home" : "home-outline"} 
-                size={26} 
-                color={color} 
-              />
-            </View>
+            <MaterialCommunityIcons 
+              name={focused ? "home" : "home-outline"} 
+              size={24} 
+              color={color} 
+            />
           ),
         }}
       />
@@ -65,13 +63,11 @@ export default function TabsLayout() {
         options={{
           title: 'Customers',
           tabBarIcon: ({ color, focused }) => (
-            <View style={{ alignItems: 'center' }}>
-              <MaterialCommunityIcons 
-                name={focused ? "account-group" : "account-group-outline"} 
-                size={26} 
-                color={color} 
-              />
-            </View>
+            <MaterialCommunityIcons 
+              name={focused ? "account-group" : "account-group-outline"} 
+              size={24} 
+              color={color} 
+            />
           ),
         }}
       />
@@ -80,13 +76,24 @@ export default function TabsLayout() {
         options={{
           title: 'Orders',
           tabBarIcon: ({ color, focused }) => (
-            <View style={{ alignItems: 'center' }}>
-              <MaterialCommunityIcons 
-                name={focused ? "clipboard-list" : "clipboard-list-outline"} 
-                size={26} 
-                color={color} 
-              />
-            </View>
+            <MaterialCommunityIcons 
+              name={focused ? "clipboard-list" : "clipboard-list-outline"} 
+              size={24} 
+              color={color} 
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="billing"
+        options={{
+          title: 'Billing',
+          tabBarIcon: ({ color, focused }) => (
+            <MaterialCommunityIcons 
+              name={focused ? "cash-multiple" : "cash"} 
+              size={24} 
+              color={color} 
+            />
           ),
         }}
       />
@@ -95,13 +102,11 @@ export default function TabsLayout() {
         options={{
           title: 'Settings',
           tabBarIcon: ({ color, focused }) => (
-            <View style={{ alignItems: 'center' }}>
-              <Feather 
-                name="settings" 
-                size={24} 
-                color={color} 
-              />
-            </View>
+            <Feather 
+              name="settings" 
+              size={22} 
+              color={color} 
+            />
           ),
         }}
       />
