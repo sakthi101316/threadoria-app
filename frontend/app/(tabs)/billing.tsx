@@ -399,53 +399,66 @@ export default function BillingScreen() {
 
       {/* Record Payment Modal */}
       <Modal visible={showRecordPaymentModal} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.recordModalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Record Payment</Text>
-              <TouchableOpacity onPress={() => {
-                setShowRecordPaymentModal(false);
-                setPaymentAmount('');
-                setSelectedPayment(null);
-              }}>
-                <Ionicons name="close" size={24} color={COLORS.black} />
-              </TouchableOpacity>
-            </View>
-
-            {selectedPayment && (
-              <>
-                <View style={styles.paymentInfo}>
-                  <Text style={styles.infoLabel}>Customer</Text>
-                  <Text style={styles.infoValue}>{selectedPayment.customer_name}</Text>
-                  <Text style={styles.infoLabel}>Order</Text>
-                  <Text style={styles.infoValue}>{selectedPayment.order_type}</Text>
-                  <Text style={styles.infoLabel}>Balance Due</Text>
-                  <Text style={[styles.infoValue, { color: COLORS.error }]}>
-                    ₹{selectedPayment.balance_amount.toFixed(2)}
-                  </Text>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <KeyboardAvoidingView 
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={styles.modalOverlay}
+          >
+            <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
+              <View style={styles.recordModalContent}>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>Record Payment</Text>
+                  <TouchableOpacity onPress={() => {
+                    Keyboard.dismiss();
+                    setShowRecordPaymentModal(false);
+                    setPaymentAmount('');
+                    setSelectedPayment(null);
+                  }}>
+                    <Ionicons name="close" size={24} color={COLORS.black} />
+                  </TouchableOpacity>
                 </View>
 
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Payment Amount (₹)</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Enter amount received"
-                    placeholderTextColor={COLORS.gray}
-                    value={paymentAmount}
-                    onChangeText={setPaymentAmount}
-                    keyboardType="numeric"
-                  />
-                </View>
+                {selectedPayment && (
+                  <>
+                    <View style={styles.paymentInfo}>
+                      <Text style={styles.infoLabel}>Customer</Text>
+                      <Text style={styles.infoValue}>{selectedPayment.customer_name}</Text>
+                      <Text style={styles.infoLabel}>Order</Text>
+                      <Text style={styles.infoValue}>{selectedPayment.order_type}</Text>
+                      <Text style={styles.infoLabel}>Balance Due</Text>
+                      <Text style={[styles.infoValue, { color: COLORS.error }]}>
+                        ₹{selectedPayment.balance_amount.toFixed(2)}
+                      </Text>
+                    </View>
 
-                <GoldButton
-                  title="Record Payment & Send WhatsApp"
-                  onPress={handleRecordPayment}
-                  style={styles.recordButton}
-                />
-              </>
-            )}
-          </View>
-        </View>
+                    <View style={styles.inputGroup}>
+                      <Text style={styles.inputLabel}>Payment Amount (₹)</Text>
+                      <TextInput
+                        style={styles.input}
+                        placeholder="Enter amount received"
+                        placeholderTextColor={COLORS.gray}
+                        value={paymentAmount}
+                        onChangeText={setPaymentAmount}
+                        keyboardType="numeric"
+                        returnKeyType="done"
+                        onSubmitEditing={Keyboard.dismiss}
+                      />
+                    </View>
+
+                    <GoldButton
+                      title="Record Payment & Send WhatsApp"
+                      onPress={() => {
+                        Keyboard.dismiss();
+                        handleRecordPayment();
+                      }}
+                      style={styles.recordButton}
+                    />
+                  </>
+                )}
+              </View>
+            </TouchableWithoutFeedback>
+          </KeyboardAvoidingView>
+        </TouchableWithoutFeedback>
       </Modal>
     </SafeAreaView>
   );
