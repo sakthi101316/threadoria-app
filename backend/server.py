@@ -857,10 +857,12 @@ async def transcribe_voice(request: VoiceTranscriptionRequest):
         
         emergent_key = os.environ.get('EMERGENT_LLM_KEY')
         if not emergent_key:
+            logger.error("EMERGENT_LLM_KEY not configured")
             raise HTTPException(status_code=500, detail="EMERGENT_LLM_KEY not configured")
         
         # Decode base64 audio
         audio_data = base64.b64decode(request.audio_base64)
+        logger.info(f"Received audio data: {len(audio_data)} bytes, format: {request.format}")
         
         # Save temporarily
         temp_path = f"/tmp/audio_{uuid.uuid4()}.{request.format}"
@@ -881,6 +883,8 @@ async def transcribe_voice(request: VoiceTranscriptionRequest):
         
         # Clean up
         os.remove(temp_path)
+        
+        logger.info(f"Transcription result: '{transcription.text}'")
         
         return VoiceTranscriptionResponse(
             text=transcription.text,
