@@ -11,7 +11,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   Animated,
-  Keyboard,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -69,12 +68,16 @@ export default function AddMeasurementScreen() {
   const [category, setCategory] = useState<'Top' | 'Bottom'>('Top');
   const [loading, setLoading] = useState(false);
   const [referencePhotos, setReferencePhotos] = useState<string[]>([]);
-  const [isRecording, setIsRecording] = useState(false);
-  const [recording, setRecording] = useState<Audio.Recording | null>(null);
+  const [isListening, setIsListening] = useState(false);
   const [transcribedText, setTranscribedText] = useState('');
   const [lastFilledField, setLastFilledField] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [statusText, setStatusText] = useState('Tap to START');
   const pulseAnim = useRef(new Animated.Value(1)).current;
+  
+  // Refs for continuous recording
+  const recordingRef = useRef<Audio.Recording | null>(null);
+  const isListeningRef = useRef(false);
+  const chunkIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Top measurements
   const [topMeasurements, setTopMeasurements] = useState({
@@ -126,19 +129,26 @@ export default function AddMeasurementScreen() {
     { key: 'ankle', label: 'Ankle' },
   ];
 
-  // Pulse animation when recording
+  // Cleanup on unmount
   useEffect(() => {
-    if (isRecording) {
+    return () => {
+      stopListening();
+    };
+  }, []);
+
+  // Pulse animation when listening
+  useEffect(() => {
+    if (isListening) {
       Animated.loop(
         Animated.sequence([
           Animated.timing(pulseAnim, {
-            toValue: 1.15,
-            duration: 800,
+            toValue: 1.2,
+            duration: 600,
             useNativeDriver: true,
           }),
           Animated.timing(pulseAnim, {
             toValue: 1,
-            duration: 800,
+            duration: 600,
             useNativeDriver: true,
           }),
         ])
@@ -147,93 +157,56 @@ export default function AddMeasurementScreen() {
       pulseAnim.stopAnimation();
       pulseAnim.setValue(1);
     }
-  }, [isRecording]);
+  }, [isListening]);
 
   // Parse voice input to extract field-value pairs
   const parseAndFillMeasurements = (text: string) => {
-    if (!text) return;
+    if (!text) return false;
     
     const lowerText = text.toLowerCase();
-    let filledFields: string[] = [];
+    let filled = false;
     
-    // Sort field mappings by length (longest first) to match multi-word phrases first
+    // Sort by length to match longer phrases first
     const sortedMappings = Object.entries(FIELD_MAPPINGS).sort(
       (a, b) => b[0].length - a[0].length
     );
     
-    // Try to match field name and number
     for (const [spoken, fieldKey] of sortedMappings) {
-      // Create regex to find field name followed by number
-      const regex = new RegExp(`${spoken}\\s*(?:is|equals|=)?\\s*([0-9]+\\.?[0-9]*)`, 'gi');
+      const regex = new RegExp(`${spoken}\\s*(?:is|equals|=|:)?\\s*([0-9]+\\.?[0-9]*)`, 'gi');
       const matches = [...lowerText.matchAll(regex)];
       
       for (const match of matches) {
         if (match[1]) {
           const value = match[1];
           
-          // Check if field belongs to current category
           if (category === 'Top' && fieldKey in topMeasurements) {
             setTopMeasurements(prev => ({ ...prev, [fieldKey]: value }));
-            filledFields.push(fieldKey);
+            setLastFilledField(fieldKey);
+            filled = true;
           } else if (category === 'Bottom' && fieldKey in bottomMeasurements) {
             setBottomMeasurements(prev => ({ ...prev, [fieldKey]: value }));
-            filledFields.push(fieldKey);
+            setLastFilledField(fieldKey);
+            filled = true;
           }
         }
       }
     }
     
-    // Highlight the last filled field
-    if (filledFields.length > 0) {
-      setLastFilledField(filledFields[filledFields.length - 1]);
-      setTimeout(() => setLastFilledField(''), 2000);
+    if (filled) {
+      setTimeout(() => setLastFilledField(''), 1500);
     }
     
-    return filledFields.length > 0;
+    return filled;
   };
 
-  const startRecording = async () => {
+  // Process audio chunk
+  const processAudioChunk = async (uri: string) => {
     try {
-      const permission = await Audio.requestPermissionsAsync();
-      if (!permission.granted) {
-        Alert.alert('Permission Required', 'Please grant microphone permission to use voice input.');
-        return;
-      }
-
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-      });
-
-      const { recording: newRecording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
-      );
+      setStatusText('Processing...');
+      const response = await fetch(uri);
+      const blob = await response.blob();
       
-      setRecording(newRecording);
-      setIsRecording(true);
-      setTranscribedText('');
-    } catch (error) {
-      console.error('Failed to start recording:', error);
-      Alert.alert('Error', 'Failed to start recording. Please try again.');
-    }
-  };
-
-  const stopRecording = async () => {
-    if (!recording) return;
-    
-    setIsRecording(false);
-    setIsProcessing(true);
-    
-    try {
-      await recording.stopAndUnloadAsync();
-      const uri = recording.getURI();
-      setRecording(null);
-      
-      if (uri) {
-        // Read audio file and send to API
-        const response = await fetch(uri);
-        const blob = await response.blob();
-        
+      return new Promise<void>((resolve) => {
         const reader = new FileReader();
         reader.onloadend = async () => {
           const base64data = reader.result as string;
@@ -242,34 +215,130 @@ export default function AddMeasurementScreen() {
           if (base64Audio) {
             try {
               const result = await api.transcribeVoice(base64Audio, 'm4a');
-              if (result.success && result.text) {
-                setTranscribedText(result.text);
-                parseAndFillMeasurements(result.text);
+              if (result.success && result.text && result.text.trim()) {
+                const newText = result.text.trim();
+                setTranscribedText(prev => {
+                  const combined = prev ? `${prev} ${newText}` : newText;
+                  return combined.slice(-150); // Keep last 150 chars
+                });
+                const filled = parseAndFillMeasurements(newText);
+                if (filled) {
+                  setStatusText('✓ Field filled!');
+                } else {
+                  setStatusText('Listening...');
+                }
               } else {
-                Alert.alert('Voice Input', 'Could not understand the audio. Please try again.');
+                setStatusText('Listening...');
               }
             } catch (error) {
               console.error('Transcription error:', error);
-              Alert.alert('Error', 'Failed to process voice input. Please try again.');
+              setStatusText('Listening...');
             }
           }
-          setIsProcessing(false);
+          resolve();
         };
         reader.readAsDataURL(blob);
-      } else {
-        setIsProcessing(false);
-      }
+      });
     } catch (error) {
-      console.error('Error stopping recording:', error);
-      setIsProcessing(false);
+      console.error('Process chunk error:', error);
+      setStatusText('Listening...');
     }
   };
 
-  const toggleRecording = () => {
-    if (isRecording) {
-      stopRecording();
+  // Start a new recording chunk
+  const startNewChunk = async () => {
+    try {
+      const { recording } = await Audio.Recording.createAsync(
+        Audio.RecordingOptionsPresets.HIGH_QUALITY
+      );
+      recordingRef.current = recording;
+    } catch (error) {
+      console.error('Start chunk error:', error);
+    }
+  };
+
+  // Stop current chunk and process it
+  const stopAndProcessChunk = async () => {
+    if (!recordingRef.current) return;
+    
+    try {
+      const recording = recordingRef.current;
+      recordingRef.current = null;
+      
+      await recording.stopAndUnloadAsync();
+      const uri = recording.getURI();
+      
+      if (uri) {
+        // Process in background
+        processAudioChunk(uri);
+      }
+    } catch (error) {
+      console.error('Stop chunk error:', error);
+    }
+  };
+
+  // Main continuous recording loop
+  const startListening = async () => {
+    try {
+      const permission = await Audio.requestPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert('Permission Required', 'Please grant microphone permission.');
+        return;
+      }
+
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+      });
+
+      isListeningRef.current = true;
+      setIsListening(true);
+      setTranscribedText('');
+      setStatusText('Listening...');
+
+      // Start first chunk
+      await startNewChunk();
+
+      // Set up interval to process chunks every 3 seconds
+      chunkIntervalRef.current = setInterval(async () => {
+        if (!isListeningRef.current) return;
+        
+        // Stop current chunk and process it
+        await stopAndProcessChunk();
+        
+        // Start new chunk immediately
+        if (isListeningRef.current) {
+          await startNewChunk();
+        }
+      }, 3000);
+
+    } catch (error) {
+      console.error('Start listening error:', error);
+      Alert.alert('Error', 'Failed to start voice input.');
+      stopListening();
+    }
+  };
+
+  const stopListening = async () => {
+    isListeningRef.current = false;
+    setIsListening(false);
+    setStatusText('Tap to START');
+
+    // Clear interval
+    if (chunkIntervalRef.current) {
+      clearInterval(chunkIntervalRef.current);
+      chunkIntervalRef.current = null;
+    }
+
+    // Stop and process final chunk
+    await stopAndProcessChunk();
+  };
+
+  const toggleListening = () => {
+    if (isListening) {
+      stopListening();
     } else {
-      startRecording();
+      startListening();
     }
   };
 
@@ -293,6 +362,11 @@ export default function AddMeasurementScreen() {
     if (!customerId) {
       Alert.alert('Error', 'Customer ID is required');
       return;
+    }
+
+    // Stop listening if active
+    if (isListening) {
+      await stopListening();
     }
 
     setLoading(true);
@@ -361,7 +435,7 @@ export default function AddMeasurementScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.flex}
       >
-        {/* Header with Back Button */}
+        {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <Feather name="arrow-left" size={24} color={COLORS.black} />
@@ -405,38 +479,38 @@ export default function AddMeasurementScreen() {
           </View>
 
           {/* Voice Entry Card */}
-          <GlassCard style={[styles.voiceCard, isRecording && styles.voiceCardActive]}>
+          <GlassCard style={[styles.voiceCard, isListening && styles.voiceCardActive]}>
             <Text style={styles.voiceTitle}>
-              {isRecording ? '🎤 Recording...' : isProcessing ? '⏳ Processing...' : '🎙️ Voice Entry'}
+              {isListening ? '🔴 LIVE Recording' : '🎙️ Voice Entry'}
             </Text>
             <Text style={styles.voiceInstructions}>
-              {isRecording 
-                ? 'Speak: "Full length 42, shoulder 14, bust 36"' 
-                : 'Tap mic to record measurements'}
+              Say: "Full length 42, shoulder 14, bust 36"
+            </Text>
+            <Text style={styles.voiceNote}>
+              Fields fill every 3 seconds as you speak
             </Text>
             
             <TouchableOpacity
               style={styles.mainVoiceButton}
-              onPress={toggleRecording}
+              onPress={toggleListening}
               activeOpacity={0.8}
-              disabled={isProcessing}
             >
               <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
                 <LinearGradient
-                  colors={isRecording ? ['#EF4444', '#DC2626'] : isProcessing ? ['#9CA3AF', '#6B7280'] : [COLORS.primary, '#991B1B']}
+                  colors={isListening ? ['#EF4444', '#DC2626'] : [COLORS.primary, '#991B1B']}
                   style={styles.voiceButtonGradient}
                 >
                   <MaterialCommunityIcons
-                    name={isRecording ? "stop" : isProcessing ? "loading" : "microphone"}
-                    size={44}
+                    name={isListening ? "stop" : "microphone"}
+                    size={48}
                     color={COLORS.white}
                   />
                 </LinearGradient>
               </Animated.View>
             </TouchableOpacity>
             
-            <Text style={styles.voiceStatus}>
-              {isRecording ? '⏹️ Tap to STOP' : isProcessing ? 'Processing audio...' : '▶️ Tap to RECORD'}
+            <Text style={[styles.voiceStatus, isListening && styles.voiceStatusActive]}>
+              {statusText}
             </Text>
 
             {transcribedText ? (
@@ -575,35 +649,44 @@ const styles = StyleSheet.create({
   },
   voiceCardActive: {
     borderColor: COLORS.error,
-    backgroundColor: 'rgba(239, 68, 68, 0.05)',
+    backgroundColor: 'rgba(239, 68, 68, 0.08)',
   },
   voiceTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
     color: COLORS.black,
     marginBottom: SPACING.xs,
   },
   voiceInstructions: {
-    fontSize: 13,
+    fontSize: 14,
     color: COLORS.gray,
     textAlign: 'center',
-    marginBottom: SPACING.lg,
+  },
+  voiceNote: {
+    fontSize: 12,
+    color: COLORS.success,
+    textAlign: 'center',
+    marginBottom: SPACING.md,
+    fontWeight: '600',
   },
   mainVoiceButton: {
     marginBottom: SPACING.md,
   },
   voiceButtonGradient: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 110,
+    height: 110,
+    borderRadius: 55,
     alignItems: 'center',
     justifyContent: 'center',
     ...SHADOWS.large,
   },
   voiceStatus: {
-    fontSize: 14,
+    fontSize: 16,
     color: COLORS.gray,
     fontWeight: '600',
+  },
+  voiceStatusActive: {
+    color: COLORS.error,
   },
   transcribedBox: {
     backgroundColor: COLORS.cream,
