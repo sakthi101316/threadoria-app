@@ -869,11 +869,10 @@ async def transcribe_voice(request: VoiceTranscriptionRequest):
         with open(temp_path, 'wb') as f:
             f.write(audio_data)
         
-        # Use OpenAI Whisper via Emergent Integration Proxy
-        integration_proxy_url = os.environ.get('INTEGRATION_PROXY_URL', 'https://integrations.emergentagent.com')
+        # Use OpenAI Whisper directly with OpenAI API
         client = openai.OpenAI(
             api_key=emergent_key,
-            base_url=f"{integration_proxy_url}/openai/v1"
+            base_url="https://api.openai.com/v1"
         )
         
         with open(temp_path, 'rb') as audio_file:
