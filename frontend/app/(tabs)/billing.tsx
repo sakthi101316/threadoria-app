@@ -305,7 +305,7 @@ export default function BillingScreen() {
             <StatCard
               title="Pending"
               value={analytics.total_pending}
-              icon="cash-clock"
+              icon="cash-remove"
               gradient={['#F59E0B', '#D97706']}
               prefix="₹"
             />
