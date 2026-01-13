@@ -1,10 +1,10 @@
-// Maahis Designer Boutique Theme
+// BoutiqueFit - Multi-Boutique Management App Theme
 export const COLORS = {
-  primary: '#C11F27',    // Red
-  secondary: '#DD5A27',  // Orange
-  accent: '#2A85B5',     // Blue
-  gold: '#E7C475',       // Gold
-  cream: '#F8F5EF',      // Background
+  primary: '#8B1538',      // Deep Burgundy
+  secondary: '#C9A050',    // Gold
+  accent: '#2A85B5',       // Accent Blue
+  gold: '#D4AF37',         // Rich Gold
+  cream: '#FDF8F3',        // Warm Cream Background
   white: '#FFFFFF',
   black: '#1A1A1A',
   gray: '#6B7280',
@@ -12,6 +12,7 @@ export const COLORS = {
   success: '#10B981',
   warning: '#F59E0B',
   error: '#EF4444',
+  rose: '#BE185D',         // Rose accent
   
   // Status colors
   statusReceived: '#6B7280',
@@ -22,11 +23,17 @@ export const COLORS = {
   statusDelivered: '#059669',
 };
 
+export const APP_CONFIG = {
+  name: 'BoutiqueFit',
+  tagline: 'Your Perfect Fit, Every Time',
+  version: '2.0.0',
+};
+
 export const FONTS = {
-  title: 'serif',       // Great Vibes alternative
-  heading: 'System',    // Montserrat alternative
-  body: 'System',       // Poppins alternative
-  numbers: 'System',    // Inter alternative
+  title: 'serif',
+  heading: 'System',
+  body: 'System',
+  numbers: 'System',
 };
 
 export const SHADOWS = {
@@ -52,7 +59,7 @@ export const SHADOWS = {
     elevation: 8,
   },
   gold: {
-    shadowColor: '#E7C475',
+    shadowColor: '#D4AF37',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4,
     shadowRadius: 8,
