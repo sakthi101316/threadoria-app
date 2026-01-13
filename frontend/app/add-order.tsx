@@ -402,29 +402,79 @@ export default function AddOrderScreen() {
         </View>
       </Modal>
 
-      {/* Date Pickers */}
+      {/* Date Pickers - Using Modal for better cross-platform support */}
       {showOrderDatePicker && (
-        <DateTimePicker
-          value={orderDate}
-          mode="date"
-          display="default"
-          onChange={(event, date) => {
-            setShowOrderDatePicker(false);
-            if (date) setOrderDate(date);
-          }}
-        />
+        <Modal transparent animationType="fade" visible={showOrderDatePicker}>
+          <View style={styles.dateModalOverlay}>
+            <View style={styles.dateModalContent}>
+              <View style={styles.dateModalHeader}>
+                <Text style={styles.dateModalTitle}>Select Order Date</Text>
+                <TouchableOpacity onPress={() => setShowOrderDatePicker(false)}>
+                  <Ionicons name="close" size={24} color={COLORS.black} />
+                </TouchableOpacity>
+              </View>
+              <DateTimePicker
+                value={orderDate}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'spinner' : 'calendar'}
+                onChange={(event, date) => {
+                  if (Platform.OS === 'android') {
+                    setShowOrderDatePicker(false);
+                    if (event.type === 'set' && date) setOrderDate(date);
+                  } else if (date) {
+                    setOrderDate(date);
+                  }
+                }}
+                style={{ width: '100%', height: 200 }}
+              />
+              {Platform.OS === 'ios' && (
+                <TouchableOpacity 
+                  style={styles.dateModalButton}
+                  onPress={() => setShowOrderDatePicker(false)}
+                >
+                  <Text style={styles.dateModalButtonText}>Done</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        </Modal>
       )}
       {showDeliveryDatePicker && (
-        <DateTimePicker
-          value={deliveryDate}
-          mode="date"
-          display="default"
-          minimumDate={orderDate}
-          onChange={(event, date) => {
-            setShowDeliveryDatePicker(false);
-            if (date) setDeliveryDate(date);
-          }}
-        />
+        <Modal transparent animationType="fade" visible={showDeliveryDatePicker}>
+          <View style={styles.dateModalOverlay}>
+            <View style={styles.dateModalContent}>
+              <View style={styles.dateModalHeader}>
+                <Text style={styles.dateModalTitle}>Select Delivery Date</Text>
+                <TouchableOpacity onPress={() => setShowDeliveryDatePicker(false)}>
+                  <Ionicons name="close" size={24} color={COLORS.black} />
+                </TouchableOpacity>
+              </View>
+              <DateTimePicker
+                value={deliveryDate}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'spinner' : 'calendar'}
+                minimumDate={orderDate}
+                onChange={(event, date) => {
+                  if (Platform.OS === 'android') {
+                    setShowDeliveryDatePicker(false);
+                    if (event.type === 'set' && date) setDeliveryDate(date);
+                  } else if (date) {
+                    setDeliveryDate(date);
+                  }
+                }}
+                style={{ width: '100%', height: 200 }}
+              />
+              {Platform.OS === 'ios' && (
+                <TouchableOpacity 
+                  style={styles.dateModalButton}
+                  onPress={() => setShowDeliveryDatePicker(false)}
+                >
+                  <Text style={styles.dateModalButtonText}>Done</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        </Modal>
       )}
     </SafeAreaView>
   );
