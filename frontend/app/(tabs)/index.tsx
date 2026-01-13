@@ -192,25 +192,26 @@ export default function DashboardScreen() {
         }
         showsVerticalScrollIndicator={false}
       >
-        {/* Circular Logo Section - Same as login page */}
+        {/* Circular Logo Section - BoutiqueFit Branding */}
         <View style={styles.logoSection}>
-          <LinearGradient
-            colors={['#FFFFFF', '#FFF5E6', '#FFE4C9']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.logoGradientBg}
-          >
-            <View style={styles.logoInnerCircle}>
-              <Image source={{ uri: LOGO_URL }} style={styles.logo} resizeMode="contain" />
+          <View style={styles.logoOuterRing}>
+            <View style={styles.logoMiddleRing}>
+              <LinearGradient
+                colors={['#FFFFFF', '#FFF5E6']}
+                style={styles.logoCircle}
+              >
+                <MaterialCommunityIcons name="scissors-cutting" size={50} color={COLORS.primary} />
+              </LinearGradient>
             </View>
-          </LinearGradient>
-          {/* Decorative rings */}
-          <View style={[styles.decorativeRing, styles.ring1]} />
-          <View style={[styles.decorativeRing, styles.ring2]} />
+          </View>
         </View>
 
-        {/* Tagline */}
-        <Text style={styles.tagline}>"Where Elegance Meets Perfection"</Text>
+        {/* App Name and Tagline */}
+        <Text style={styles.appNameText}>{APP_CONFIG.name}</Text>
+        <Text style={styles.tagline}>{APP_CONFIG.tagline}</Text>
+        {user?.boutique_name && (
+          <Text style={styles.boutiqueNameText}>{user.boutique_name}</Text>
+        )}
 
         {/* Stats Section */}
         <View style={styles.statsGrid}>
