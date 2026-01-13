@@ -53,6 +53,48 @@ export default function AddOrderScreen() {
   
   const [loading, setLoading] = useState(false);
 
+  // Measurements state
+  const [showMeasurements, setShowMeasurements] = useState(false);
+  const [measurementCategory, setMeasurementCategory] = useState<'Top' | 'Bottom'>('Top');
+  const [topMeasurements, setTopMeasurements] = useState({
+    full_length: '',
+    shoulder: '',
+    upper_chest: '',
+    bust: '',
+    waist: '',
+    sleeve_length: '',
+    sleeve_round: '',
+    arm_hole: '',
+    biceps: '',
+  });
+  const [bottomMeasurements, setBottomMeasurements] = useState({
+    length: '',
+    hip_round: '',
+    thighs: '',
+    knees: '',
+    ankle: '',
+  });
+
+  const topFields = [
+    { key: 'full_length', label: 'Full Length' },
+    { key: 'shoulder', label: 'Shoulder' },
+    { key: 'upper_chest', label: 'Upper Chest' },
+    { key: 'bust', label: 'Bust' },
+    { key: 'waist', label: 'Waist' },
+    { key: 'sleeve_length', label: 'Sleeve' },
+    { key: 'sleeve_round', label: 'Sleeve R.' },
+    { key: 'arm_hole', label: 'Arm Hole' },
+    { key: 'biceps', label: 'Biceps' },
+  ];
+
+  const bottomFields = [
+    { key: 'length', label: 'Length' },
+    { key: 'hip_round', label: 'Hip Round' },
+    { key: 'thighs', label: 'Thighs' },
+    { key: 'knees', label: 'Knees' },
+    { key: 'ankle', label: 'Ankle' },
+  ];
+
   useEffect(() => {
     fetchCustomers();
     if (params.customerId) {
