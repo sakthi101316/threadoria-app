@@ -35,16 +35,27 @@ logger = logging.getLogger(__name__)
 
 # ========================== MODELS ==========================
 
-# User Models
+# User/Boutique Models
 class UserLogin(BaseModel):
-    username: str
+    email: str
     pin: str
+
+class UserRegister(BaseModel):
+    boutique_name: str
+    owner_name: str
+    email: str
+    phone: str
+    pin: str
+    otp: str
+
+class SendOTPRequest(BaseModel):
+    email: str
 
 class UserResponse(BaseModel):
     success: bool
     message: str
     user_id: Optional[str] = None
-    username: Optional[str] = None
+    boutique_name: Optional[str] = None
 
 # Customer Models
 class CustomerCreate(BaseModel):
