@@ -153,9 +153,17 @@ export default function OrderDetailScreen() {
           <Ionicons name="arrow-back" size={24} color={COLORS.black} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Order Details</Text>
-        <TouchableOpacity onPress={handleDelete} style={styles.deleteButton}>
-          <Ionicons name="trash" size={24} color={COLORS.error} />
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity 
+            onPress={() => router.push({ pathname: '/edit-order', params: { orderId: id } })} 
+            style={styles.editButton}
+          >
+            <Ionicons name="pencil" size={22} color={COLORS.primary} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handleDelete} style={styles.deleteButton}>
+            <Ionicons name="trash" size={22} color={COLORS.error} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
