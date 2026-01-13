@@ -6,21 +6,20 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
-  Image,
   Animated,
   Dimensions,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons, FontAwesome5, Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS, SPACING, BORDER_RADIUS, SHADOWS } from '../../src/constants/theme';
+import { COLORS, SPACING, BORDER_RADIUS, SHADOWS, APP_CONFIG } from '../../src/constants/theme';
 import { GlassCard } from '../../src/components/GlassCard';
 import { VoiceButton } from '../../src/components/VoiceButton';
 import { api } from '../../src/services/api';
 import { useAuth } from '../../src/context/AuthContext';
 
-const LOGO_URL = 'https://customer-assets.emergentagent.com/job_fashion-tracker-10/artifacts/jedgi7jd_WhatsApp%20Image%202025-11-28%20at%207.10.00%20PM.jpeg';
 const { width } = Dimensions.get('window');
 
 interface DashboardStats {
@@ -32,7 +31,7 @@ interface DashboardStats {
 
 export default function DashboardScreen() {
   const router = useRouter();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const [stats, setStats] = useState<DashboardStats>({
     total_customers: 0,
     pending_orders: 0,
@@ -83,7 +82,36 @@ export default function DashboardScreen() {
   }, []);
 
   const handleVoiceTranscription = (text: string) => {
-    router.push({ pathname: '/search', params: { query: text } });
+    const lowerText = text.toLowerCase();
+    
+    // Handle voice commands
+    if (lowerText.includes('add customer') || lowerText.includes('new customer')) {
+      router.push('/add-customer');
+      return;
+    }
+    if (lowerText.includes('add order') || lowerText.includes('new order')) {
+      router.push('/add-order');
+      return;
+    }
+    if (lowerText.includes('search') || lowerText.includes('find')) {
+      router.push({ pathname: '/search', params: { query: text } });
+      return;
+    }
+    if (lowerText.includes('customer')) {
+      router.push('/(tabs)/customers');
+      return;
+    }
+    if (lowerText.includes('order')) {
+      router.push('/(tabs)/orders');
+      return;
+    }
+    if (lowerText.includes('billing') || lowerText.includes('payment')) {
+      router.push('/(tabs)/billing');
+      return;
+    }
+    
+    // Default: go to search
+    Alert.alert('Voice Command', `You said: "${text}"\n\nTry commands like:\n• "Add customer"\n• "Search orders"\n• "Go to billing"`);
   };
 
   const StatCard = ({ title, value, icon, IconComponent, color, gradient }: { 
