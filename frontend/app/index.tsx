@@ -11,6 +11,9 @@ import {
   Animated,
   ActivityIndicator,
   TouchableOpacity,
+  TouchableWithoutFeedback,
+  Keyboard,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -31,6 +34,7 @@ export default function LoginScreen() {
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
+  const pinRef = useRef<TextInput>(null);
 
   useEffect(() => {
     // Animate logo on splash
@@ -69,12 +73,10 @@ export default function LoginScreen() {
 
   const playWelcomeAudio = async () => {
     try {
-      // Use expo-av to play welcome sound
       const { sound } = await Audio.Sound.createAsync(
         { uri: 'https://www.soundjay.com/misc/sounds/magic-chime-02.mp3' },
         { shouldPlay: true }
       );
-      // Clean up after playing
       sound.setOnPlaybackStatusUpdate((status) => {
         if (status.isLoaded && status.didJustFinish) {
           sound.unloadAsync();
@@ -137,83 +139,99 @@ export default function LoginScreen() {
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.flex}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
         >
-          <ScrollView
-            contentContainerStyle={styles.scrollContent}
-            keyboardShouldPersistTaps="handled"
-          >
-            {/* Logo Section */}
-            <View style={styles.logoSection}>
-              <View style={styles.logoOuterRing}>
-                <View style={styles.logoMiddleRing}>
-                  <View style={styles.logoCircle}>
-                    <MaterialCommunityIcons name="scissors-cutting" size={55} color={COLORS.primary} />
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <ScrollView
+              contentContainerStyle={styles.scrollContent}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              {/* Logo Section */}
+              <View style={styles.logoSection}>
+                <View style={styles.logoOuterRing}>
+                  <View style={styles.logoMiddleRing}>
+                    <View style={styles.logoCircle}>
+                      <MaterialCommunityIcons name="scissors-cutting" size={55} color={COLORS.primary} />
+                    </View>
                   </View>
                 </View>
+                <Text style={styles.appName}>{APP_CONFIG.name}</Text>
+                <Text style={styles.tagline}>{APP_CONFIG.tagline}</Text>
               </View>
-              <Text style={styles.appName}>{APP_CONFIG.name}</Text>
-              <Text style={styles.tagline}>{APP_CONFIG.tagline}</Text>
-            </View>
 
-            <View style={styles.formCard}>
-              <Text style={styles.welcomeText}>Welcome Back</Text>
-              <Text style={styles.subtitleText}>Sign in to your boutique</Text>
+              <View style={styles.formCard}>
+                <Text style={styles.welcomeText}>Welcome Back</Text>
+                <Text style={styles.subtitleText}>Sign in to your boutique</Text>
 
-              <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Email</Text>
-                <View style={styles.inputWrapper}>
-                  <Feather name="mail" size={20} color={COLORS.gray} style={styles.inputIcon} />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Enter your email"
-                    placeholderTextColor={COLORS.gray}
-                    value={email}
-                    onChangeText={setEmail}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                  />
+                <View style={styles.inputContainer}>
+                  <Text style={styles.inputLabel}>Email</Text>
+                  <View style={styles.inputWrapper}>
+                    <Feather name="mail" size={20} color={COLORS.gray} style={styles.inputIcon} />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Enter your email"
+                      placeholderTextColor={COLORS.gray}
+                      value={email}
+                      onChangeText={setEmail}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      returnKeyType="next"
+                      blurOnSubmit={false}
+                      onSubmitEditing={() => pinRef.current?.focus()}
+                    />
+                  </View>
+                </View>
+
+                <View style={styles.inputContainer}>
+                  <Text style={styles.inputLabel}>PIN</Text>
+                  <View style={styles.inputWrapper}>
+                    <Feather name="lock" size={20} color={COLORS.gray} style={styles.inputIcon} />
+                    <TextInput
+                      ref={pinRef}
+                      style={styles.input}
+                      placeholder="Enter 6-digit PIN"
+                      placeholderTextColor={COLORS.gray}
+                      value={pin}
+                      onChangeText={setPin}
+                      keyboardType="numeric"
+                      secureTextEntry
+                      maxLength={6}
+                      returnKeyType="done"
+                      onSubmitEditing={handleLogin}
+                    />
+                  </View>
+                </View>
+
+                <GoldButton
+                  title="Login"
+                  onPress={handleLogin}
+                  loading={loginLoading}
+                  style={styles.loginButton}
+                />
+
+                <View style={styles.registerContainer}>
+                  <Text style={styles.registerText}>New to BoutiqueFit?</Text>
+                  <TouchableOpacity onPress={() => router.push('/register')}>
+                    <Text style={styles.registerLink}>Create Account</Text>
+                  </TouchableOpacity>
                 </View>
               </View>
 
-              <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>PIN</Text>
-                <View style={styles.inputWrapper}>
-                  <Feather name="lock" size={20} color={COLORS.gray} style={styles.inputIcon} />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Enter 6-digit PIN"
-                    placeholderTextColor={COLORS.gray}
-                    value={pin}
-                    onChangeText={setPin}
-                    keyboardType="numeric"
-                    secureTextEntry
-                    maxLength={6}
-                  />
+              {/* Footer with Shivom Creatives */}
+              <View style={styles.footerContainer}>
+                <Text style={styles.poweredByText}>Powered by</Text>
+                <View style={styles.shivomLogoContainer}>
+                  <View style={styles.shivomLogoCircle}>
+                    <Text style={styles.shivomLogoText}>SC</Text>
+                  </View>
                 </View>
+                <Text style={styles.shivomName}>Shivom Creatives</Text>
+                <Text style={styles.versionText}>v{APP_CONFIG.version}</Text>
               </View>
-
-              <GoldButton
-                title="Login"
-                onPress={handleLogin}
-                loading={loginLoading}
-                style={styles.loginButton}
-              />
-
-              <View style={styles.registerContainer}>
-                <Text style={styles.registerText}>New to BoutiqueFit?</Text>
-                <TouchableOpacity onPress={() => router.push('/register')}>
-                  <Text style={styles.registerLink}>Create Account</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {/* Footer */}
-            <View style={styles.footerContainer}>
-              <Text style={styles.footerText}>Boutique Management Made Simple</Text>
-              <Text style={styles.versionText}>v{APP_CONFIG.version}</Text>
-            </View>
-          </ScrollView>
+            </ScrollView>
+          </TouchableWithoutFeedback>
         </KeyboardAvoidingView>
       </AnimatedBackground>
     </SafeAreaView>
@@ -270,8 +288,8 @@ const styles = StyleSheet.create({
     width: 160,
     height: 160,
     borderRadius: 80,
-    borderWidth: 2,
-    borderColor: COLORS.gold + '40',
+    borderWidth: 3,
+    borderColor: COLORS.gold,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -280,34 +298,40 @@ const styles = StyleSheet.create({
     height: 140,
     borderRadius: 70,
     borderWidth: 2,
-    borderColor: COLORS.primary + '30',
+    borderColor: COLORS.primary + '60',
     alignItems: 'center',
     justifyContent: 'center',
   },
   logoCircle: {
-    width: 110,
-    height: 110,
-    borderRadius: 55,
+    width: 115,
+    height: 115,
+    borderRadius: 58,
     backgroundColor: COLORS.white,
     alignItems: 'center',
     justifyContent: 'center',
     ...SHADOWS.gold,
+    borderWidth: 2,
+    borderColor: COLORS.gold + '40',
   },
   appName: {
-    fontSize: 36,
+    fontSize: 38,
     fontWeight: 'bold',
     color: COLORS.primary,
     marginTop: SPACING.md,
     letterSpacing: 1,
+    textShadowColor: COLORS.gold + '40',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
   tagline: {
-    fontSize: 14,
+    fontSize: 15,
     fontStyle: 'italic',
     color: COLORS.gold,
     marginTop: SPACING.xs,
+    fontWeight: '600',
   },
   formCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    backgroundColor: 'rgba(255, 255, 255, 0.98)',
     borderRadius: BORDER_RADIUS.xl,
     padding: SPACING.xl,
     ...SHADOWS.large,
@@ -375,13 +399,36 @@ const styles = StyleSheet.create({
     marginTop: SPACING.xl,
     paddingBottom: SPACING.lg,
   },
-  footerText: {
-    textAlign: 'center',
+  poweredByText: {
+    fontSize: 12,
     color: COLORS.gray,
-    fontSize: 14,
+    marginBottom: SPACING.sm,
+  },
+  shivomLogoContainer: {
+    marginBottom: SPACING.xs,
+  },
+  shivomLogoCircle: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: COLORS.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...SHADOWS.medium,
+  },
+  shivomLogoText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: COLORS.white,
+  },
+  shivomName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.primary,
+    marginTop: SPACING.xs,
   },
   versionText: {
-    fontSize: 12,
+    fontSize: 11,
     color: COLORS.lightGray,
     marginTop: SPACING.xs,
   },
