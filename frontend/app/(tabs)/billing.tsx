@@ -98,6 +98,13 @@ export default function BillingScreen() {
 
   useEffect(() => {
     fetchData();
+    
+    // Auto-refresh every 10 seconds for real-time payment updates
+    const interval = setInterval(() => {
+      fetchData();
+    }, 10000);
+    
+    return () => clearInterval(interval);
   }, [selectedPeriod, selectedStatus]);
 
   const onRefresh = useCallback(async () => {
