@@ -477,10 +477,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: SPACING.md,
-    paddingBottom: SPACING.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.lightGray,
+    marginBottom: SPACING.xs,
+  },
+  measurementActions: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
+  },
+  actionButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: COLORS.cream,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   measurementCategory: {
     fontSize: 16,
