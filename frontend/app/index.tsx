@@ -403,28 +403,10 @@ const styles = StyleSheet.create({
     color: COLORS.gray,
     marginBottom: SPACING.sm,
   },
-  shivomLogoContainer: {
+  shivomLogo: {
+    width: 120,
+    height: 60,
     marginBottom: SPACING.xs,
-  },
-  shivomLogoCircle: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: COLORS.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...SHADOWS.medium,
-  },
-  shivomLogoText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: COLORS.white,
-  },
-  shivomName: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: COLORS.primary,
-    marginTop: SPACING.xs,
   },
   versionText: {
     fontSize: 11,
