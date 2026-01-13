@@ -169,8 +169,32 @@ export default function AddOrderScreen() {
 
     setLoading(true);
     try {
+      // Create measurement if provided
+      let measurementId = null;
+      if (showMeasurements) {
+        const measurements = measurementCategory === 'Top' ? topMeasurements : bottomMeasurements;
+        const hasValues = Object.values(measurements).some(v => v !== '');
+        
+        if (hasValues) {
+          const formattedMeasurements = Object.fromEntries(
+            Object.entries(measurements).map(([k, v]) => [k, v ? parseFloat(v) : 0])
+          );
+          
+          const measurementResult = await api.createMeasurement({
+            customer_id: selectedCustomer.id,
+            category: measurementCategory,
+            top_measurements: measurementCategory === 'Top' ? formattedMeasurements : null,
+            bottom_measurements: measurementCategory === 'Bottom' ? formattedMeasurements : null,
+            reference_photos: [],
+            added_by_voice: false,
+          });
+          measurementId = measurementResult.id;
+        }
+      }
+
       const order = await api.createOrder({
         customer_id: selectedCustomer.id,
+        measurement_id: measurementId,
         order_type: orderType.trim(),
         description: description.trim(),
         material_photos: materialPhotos,
