@@ -226,58 +226,112 @@ otp_storage = {}
 
 import random
 import string
+from twilio.rest import Client as TwilioClient
 
 def generate_otp():
     return ''.join(random.choices(string.digits, k=6))
 
+def send_sms_otp(phone: str, otp: str) -> bool:
+    """Send OTP via Twilio SMS"""
+    try:
+        account_sid = os.environ.get('TWILIO_ACCOUNT_SID')
+        auth_token = os.environ.get('TWILIO_AUTH_TOKEN')
+        twilio_phone = os.environ.get('TWILIO_PHONE_NUMBER')
+        
+        if not all([account_sid, auth_token, twilio_phone]):
+            logger.warning("Twilio credentials not fully configured - using mock mode")
+            return False
+        
+        client = TwilioClient(account_sid, auth_token)
+        
+        message = client.messages.create(
+            body=f"Your BoutiqueFit verification code is: {otp}. Valid for 5 minutes.",
+            from_=twilio_phone,
+            to=phone
+        )
+        logger.info(f"SMS sent successfully: {message.sid}")
+        return True
+    except Exception as e:
+        logger.error(f"Twilio SMS error: {str(e)}")
+        return False
+
+class SendSMSOTPRequest(BaseModel):
+    phone: str
+
 @api_router.post("/auth/send-otp")
-async def send_otp(request: SendOTPRequest):
-    """Send OTP to email for registration"""
-    email = request.email.lower()
+async def send_otp(request: SendSMSOTPRequest):
+    """Send OTP to phone number for registration"""
+    phone = request.phone
     
-    # Check if email already registered
-    existing_user = await db.users.find_one({"email": email})
+    # Normalize phone number (add +91 for India if not present)
+    if not phone.startswith('+'):
+        phone = '+91' + phone.lstrip('0')
+    
+    # Check if phone already registered
+    existing_user = await db.users.find_one({"phone": phone})
     if existing_user:
-        return {"success": False, "message": "Email already registered. Please login."}
+        return {"success": False, "message": "Phone number already registered. Please login."}
     
     # Generate OTP
     otp = generate_otp()
-    otp_storage[email] = {
+    otp_storage[phone] = {
         "otp": otp,
         "created_at": datetime.utcnow()
     }
     
-    # TODO: Send email when API key is provided
-    # For now, we'll accept any 6-digit OTP for demo (mock mode)
-    logger.info(f"OTP for {email}: {otp} (MOCKED - accept any 6-digit code)")
+    # Try to send SMS
+    sms_sent = send_sms_otp(phone, otp)
     
-    return {"success": True, "message": f"OTP sent to {email}. For demo, use any 6-digit code."}
+    if sms_sent:
+        logger.info(f"OTP sent via SMS to {phone}")
+        return {"success": True, "message": f"OTP sent to {phone}"}
+    else:
+        # Fallback to mock mode
+        logger.info(f"OTP for {phone}: {otp} (MOCK MODE - SMS not configured)")
+        return {"success": True, "message": f"OTP sent to {phone}. (Demo: use {otp})"}
 
 @api_router.post("/auth/register", response_model=UserResponse)
 async def register(data: UserRegister):
     """Register a new boutique"""
+    phone = data.phone
     email = data.email.lower()
     
-    # Check if email already registered
-    existing_user = await db.users.find_one({"email": email})
+    # Normalize phone number
+    if not phone.startswith('+'):
+        phone = '+91' + phone.lstrip('0')
+    
+    # Check if phone already registered
+    existing_user = await db.users.find_one({"phone": phone})
     if existing_user:
+        return UserResponse(success=False, message="Phone number already registered")
+    
+    # Check if email already registered
+    existing_email = await db.users.find_one({"email": email})
+    if existing_email:
         return UserResponse(success=False, message="Email already registered")
     
-    # Verify OTP (for demo, accept any 6-digit code)
+    # Verify OTP
     if len(data.otp) != 6 or not data.otp.isdigit():
         return UserResponse(success=False, message="Invalid OTP format")
     
-    # In production, verify against stored OTP
-    # stored_otp = otp_storage.get(email)
-    # if not stored_otp or stored_otp["otp"] != data.otp:
-    #     return UserResponse(success=False, message="Invalid or expired OTP")
+    stored_otp = otp_storage.get(phone)
+    if stored_otp:
+        # Check if OTP matches
+        if stored_otp["otp"] != data.otp:
+            return UserResponse(success=False, message="Invalid OTP")
+        # Check if OTP expired (5 minutes)
+        if (datetime.utcnow() - stored_otp["created_at"]).total_seconds() > 300:
+            return UserResponse(success=False, message="OTP expired. Please request a new one.")
+    else:
+        # Accept any 6-digit OTP in demo mode
+        logger.warning(f"No stored OTP for {phone}, accepting in demo mode")
     
     # Create user
     user_doc = {
         "boutique_name": data.boutique_name,
         "owner_name": data.owner_name,
         "email": email,
-        "phone": data.phone,
+        "phone": phone,
         "pin": data.pin,
         "created_at": datetime.utcnow(),
         "is_active": True
@@ -286,8 +340,8 @@ async def register(data: UserRegister):
     result = await db.users.insert_one(user_doc)
     
     # Clear OTP
-    if email in otp_storage:
-        del otp_storage[email]
+    if phone in otp_storage:
+        del otp_storage[phone]
     
     return UserResponse(
         success=True,
@@ -298,11 +352,18 @@ async def register(data: UserRegister):
 
 @api_router.post("/auth/login", response_model=UserResponse)
 async def login(credentials: UserLogin):
-    """Login with email and PIN"""
-    email = credentials.email.lower()
+    """Login with phone/email and PIN"""
+    identifier = credentials.email.lower()
     
-    # Check in database
-    user = await db.users.find_one({"email": email, "pin": credentials.pin})
+    # Check in database by email or phone
+    user = await db.users.find_one({
+        "$or": [
+            {"email": identifier, "pin": credentials.pin},
+            {"phone": identifier, "pin": credentials.pin},
+            {"phone": '+91' + identifier.lstrip('0'), "pin": credentials.pin}
+        ]
+    })
+    
     if user:
         return UserResponse(
             success=True,
@@ -311,18 +372,9 @@ async def login(credentials: UserLogin):
             boutique_name=user.get("boutique_name", "Boutique")
         )
     
-    # Legacy support: Check fixed credentials
-    if email.upper() == "MAAHIS" and credentials.pin == "101316":
-        return UserResponse(
-            success=True,
-            message="Login successful",
-            user_id="admin_001",
-            boutique_name="BoutiqueFit"
-        )
-    
     return UserResponse(
         success=False,
-        message="Invalid email or PIN"
+        message="Invalid phone/email or PIN"
     )
 
 # ========================== CUSTOMER ROUTES ==========================
