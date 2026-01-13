@@ -386,6 +386,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  headerActions: {
+    flexDirection: 'row',
+    gap: SPACING.xs,
+  },
+  editButton: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   scrollContent: {
     padding: SPACING.md,
     paddingBottom: SPACING.xxl,
