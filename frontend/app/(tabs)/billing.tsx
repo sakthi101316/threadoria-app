@@ -388,7 +388,7 @@ export default function BillingScreen() {
               <Ionicons name="close" size={28} color={COLORS.black} />
             </TouchableOpacity>
             <Text style={styles.qrModalTitle}>Scan to Pay</Text>
-            <Text style={styles.qrModalSubtitle}>Maahis Designer Boutique</Text>
+            <Text style={styles.qrModalSubtitle}>Your Boutique</Text>
             <Image source={{ uri: QR_CODE_URL }} style={styles.qrLarge} resizeMode="contain" />
             <Text style={styles.qrInstruction}>
               Ask customer to scan this QR code to make payment via UPI
