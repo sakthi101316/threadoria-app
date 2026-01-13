@@ -126,6 +126,28 @@ export default function CustomerDetailScreen() {
     </TouchableOpacity>
   );
 
+  const handleDeleteMeasurement = (measurementId: string) => {
+    Alert.alert(
+      'Delete Measurement',
+      'Are you sure you want to delete this measurement?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await api.deleteMeasurement(measurementId);
+              setMeasurements(measurements.filter(m => m.id !== measurementId));
+            } catch (error) {
+              Alert.alert('Error', 'Failed to delete measurement');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const renderMeasurements = () => (
     <View style={styles.tabContent}>
       {measurements.length === 0 ? (
@@ -144,10 +166,24 @@ export default function CustomerDetailScreen() {
             <GlassCard key={m.id} style={styles.measurementCard}>
               <View style={styles.measurementHeader}>
                 <Text style={styles.measurementCategory}>{m.category} Measurements</Text>
-                <Text style={styles.measurementDate}>
-                  {format(new Date(m.measurement_date), 'dd MMM yyyy')}
-                </Text>
+                <View style={styles.measurementActions}>
+                  <TouchableOpacity
+                    style={styles.actionButton}
+                    onPress={() => router.push({ pathname: '/edit-measurement', params: { measurementId: m.id } })}
+                  >
+                    <Ionicons name="pencil" size={18} color={COLORS.primary} />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.actionButton}
+                    onPress={() => handleDeleteMeasurement(m.id)}
+                  >
+                    <Ionicons name="trash" size={18} color={COLORS.error} />
+                  </TouchableOpacity>
+                </View>
               </View>
+              <Text style={styles.measurementDate}>
+                {format(new Date(m.measurement_date), 'dd MMM yyyy')}
+              </Text>
               <View style={styles.measurementGrid}>
                 {m.category === 'Top' && m.top_measurements && (
                   <>
