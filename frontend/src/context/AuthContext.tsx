@@ -5,8 +5,8 @@ import { api } from '../services/api';
 interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
-  user: { user_id: string; username: string } | null;
-  login: (username: string, pin: string) => Promise<{ success: boolean; message: string }>;
+  user: { user_id: string; boutique_name: string } | null;
+  login: (phone: string, pin: string) => Promise<{ success: boolean; message: string }>;
   logout: () => Promise<void>;
 }
 
@@ -15,7 +15,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [user, setUser] = useState<{ user_id: string; username: string } | null>(null);
+  const [user, setUser] = useState<{ user_id: string; boutique_name: string } | null>(null);
 
   useEffect(() => {
     checkAuth();
@@ -35,11 +35,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const login = async (username: string, pin: string) => {
+  const login = async (phone: string, pin: string) => {
     try {
-      const response = await api.login(username, pin);
-      if (response.success && response.user_id && response.username) {
-        const userData = { user_id: response.user_id, username: response.username };
+      const response = await api.login(phone, pin);
+      if (response.success && response.user_id) {
+        const userData = { 
+          user_id: response.user_id, 
+          boutique_name: response.boutique_name || 'My Boutique' 
+        };
         await AsyncStorage.setItem('user', JSON.stringify(userData));
         setUser(userData);
         setIsAuthenticated(true);
