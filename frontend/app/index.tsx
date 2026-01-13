@@ -11,8 +11,6 @@ import {
   Animated,
   ActivityIndicator,
   TouchableOpacity,
-  TouchableWithoutFeedback,
-  Keyboard,
   Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -27,7 +25,7 @@ import { useAuth } from '../src/context/AuthContext';
 export default function LoginScreen() {
   const router = useRouter();
   const { login, isAuthenticated, isLoading } = useAuth();
-  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [pin, setPin] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
@@ -88,14 +86,19 @@ export default function LoginScreen() {
   };
 
   const handleLogin = async () => {
-    if (!email.trim() || !pin.trim()) {
-      Alert.alert('Error', 'Please enter email and PIN');
+    if (!phone.trim() || !pin.trim()) {
+      Alert.alert('Error', 'Please enter mobile number and PIN');
+      return;
+    }
+
+    if (phone.length < 10) {
+      Alert.alert('Error', 'Please enter valid 10-digit mobile number');
       return;
     }
 
     setLoginLoading(true);
     try {
-      const result = await login(email.trim().toLowerCase(), pin.trim());
+      const result = await login(phone.trim(), pin.trim());
       if (result.success) {
         await playWelcomeAudio();
         router.replace('/(tabs)');
@@ -137,100 +140,95 @@ export default function LoginScreen() {
     <SafeAreaView style={styles.container}>
       <AnimatedBackground>
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           style={styles.flex}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
         >
-          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-            <ScrollView
-              contentContainerStyle={styles.scrollContent}
-              keyboardShouldPersistTaps="handled"
-              showsVerticalScrollIndicator={false}
-            >
-              {/* Logo Section */}
-              <View style={styles.logoSection}>
-                <View style={styles.logoOuterRing}>
-                  <View style={styles.logoMiddleRing}>
-                    <View style={styles.logoCircle}>
-                      <MaterialCommunityIcons name="scissors-cutting" size={55} color={COLORS.primary} />
-                    </View>
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="always"
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Logo Section */}
+            <View style={styles.logoSection}>
+              <View style={styles.logoOuterRing}>
+                <View style={styles.logoMiddleRing}>
+                  <View style={styles.logoCircle}>
+                    <MaterialCommunityIcons name="scissors-cutting" size={55} color={COLORS.primary} />
                   </View>
                 </View>
-                <Text style={styles.appName}>{APP_CONFIG.name}</Text>
-                <Text style={styles.tagline}>{APP_CONFIG.tagline}</Text>
               </View>
+              <Text style={styles.appName}>{APP_CONFIG.name}</Text>
+              <Text style={styles.tagline}>{APP_CONFIG.tagline}</Text>
+            </View>
 
-              <View style={styles.formCard}>
-                <Text style={styles.welcomeText}>Welcome Back</Text>
-                <Text style={styles.subtitleText}>Sign in to your boutique</Text>
+            <View style={styles.formCard}>
+              <Text style={styles.welcomeText}>Welcome Back</Text>
+              <Text style={styles.subtitleText}>Sign in to your boutique</Text>
 
-                <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>Email</Text>
-                  <View style={styles.inputWrapper}>
-                    <Feather name="mail" size={20} color={COLORS.gray} style={styles.inputIcon} />
-                    <TextInput
-                      style={styles.input}
-                      placeholder="Enter your email"
-                      placeholderTextColor={COLORS.gray}
-                      value={email}
-                      onChangeText={setEmail}
-                      keyboardType="email-address"
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      returnKeyType="next"
-                      blurOnSubmit={false}
-                      onSubmitEditing={() => pinRef.current?.focus()}
-                    />
-                  </View>
-                </View>
-
-                <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>PIN</Text>
-                  <View style={styles.inputWrapper}>
-                    <Feather name="lock" size={20} color={COLORS.gray} style={styles.inputIcon} />
-                    <TextInput
-                      ref={pinRef}
-                      style={styles.input}
-                      placeholder="Enter 6-digit PIN"
-                      placeholderTextColor={COLORS.gray}
-                      value={pin}
-                      onChangeText={setPin}
-                      keyboardType="numeric"
-                      secureTextEntry
-                      maxLength={6}
-                      returnKeyType="done"
-                      onSubmitEditing={handleLogin}
-                    />
-                  </View>
-                </View>
-
-                <GoldButton
-                  title="Login"
-                  onPress={handleLogin}
-                  loading={loginLoading}
-                  style={styles.loginButton}
-                />
-
-                <View style={styles.registerContainer}>
-                  <Text style={styles.registerText}>New to BoutiqueFit?</Text>
-                  <TouchableOpacity onPress={() => router.push('/register')}>
-                    <Text style={styles.registerLink}>Create Account</Text>
-                  </TouchableOpacity>
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Mobile Number</Text>
+                <View style={styles.inputWrapper}>
+                  <Text style={styles.countryCode}>+91</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter 10-digit mobile"
+                    placeholderTextColor={COLORS.gray}
+                    value={phone}
+                    onChangeText={(text) => setPhone(text.replace(/[^0-9]/g, '').slice(0, 10))}
+                    keyboardType="phone-pad"
+                    maxLength={10}
+                    returnKeyType="next"
+                    onSubmitEditing={() => pinRef.current?.focus()}
+                  />
                 </View>
               </View>
 
-              {/* Footer with Shivom Creatives */}
-              <View style={styles.footerContainer}>
-                <Text style={styles.poweredByText}>Powered by</Text>
-                <Image
-                  source={{ uri: 'https://customer-assets.emergentagent.com/job_boutique-manager-17/artifacts/e5ms1oga_Shivam%20%281%29.png' }}
-                  style={styles.shivomLogo}
-                  resizeMode="contain"
-                />
-                <Text style={styles.versionText}>v{APP_CONFIG.version}</Text>
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>PIN</Text>
+                <View style={styles.inputWrapper}>
+                  <Feather name="lock" size={20} color={COLORS.gray} style={styles.inputIcon} />
+                  <TextInput
+                    ref={pinRef}
+                    style={styles.input}
+                    placeholder="Enter 6-digit PIN"
+                    placeholderTextColor={COLORS.gray}
+                    value={pin}
+                    onChangeText={setPin}
+                    keyboardType="numeric"
+                    secureTextEntry
+                    maxLength={6}
+                    returnKeyType="done"
+                    onSubmitEditing={handleLogin}
+                  />
+                </View>
               </View>
-            </ScrollView>
-          </TouchableWithoutFeedback>
+
+              <GoldButton
+                title="Login"
+                onPress={handleLogin}
+                loading={loginLoading}
+                style={styles.loginButton}
+              />
+
+              <View style={styles.registerContainer}>
+                <Text style={styles.registerText}>New to BoutiqueFit?</Text>
+                <TouchableOpacity onPress={() => router.push('/register')}>
+                  <Text style={styles.registerLink}>Create Account</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Footer with Shivom Creatives */}
+            <View style={styles.footerContainer}>
+              <Text style={styles.poweredByText}>Powered by</Text>
+              <Image
+                source={{ uri: 'https://customer-assets.emergentagent.com/job_boutique-manager-17/artifacts/e5ms1oga_Shivam%20%281%29.png' }}
+                style={styles.shivomLogo}
+                resizeMode="contain"
+              />
+              <Text style={styles.versionText}>v{APP_CONFIG.version}</Text>
+            </View>
+          </ScrollView>
         </KeyboardAvoidingView>
       </AnimatedBackground>
     </SafeAreaView>
@@ -367,6 +365,12 @@ const styles = StyleSheet.create({
   },
   inputIcon: {
     paddingLeft: SPACING.md,
+  },
+  countryCode: {
+    paddingLeft: SPACING.md,
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.black,
   },
   input: {
     flex: 1,
