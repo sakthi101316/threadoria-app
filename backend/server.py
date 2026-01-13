@@ -226,7 +226,6 @@ otp_storage = {}
 
 import random
 import string
-from twilio.rest import Client as TwilioClient
 
 def generate_otp():
     return ''.join(random.choices(string.digits, k=6))
@@ -234,11 +233,13 @@ def generate_otp():
 def send_sms_otp(phone: str, otp: str) -> bool:
     """Send OTP via Twilio SMS"""
     try:
+        from twilio.rest import Client as TwilioClient
+        
         account_sid = os.environ.get('TWILIO_ACCOUNT_SID')
         auth_token = os.environ.get('TWILIO_AUTH_TOKEN')
         twilio_phone = os.environ.get('TWILIO_PHONE_NUMBER')
         
-        if not all([account_sid, auth_token, twilio_phone]):
+        if not all([account_sid, auth_token, twilio_phone]) or auth_token == 'YOUR_AUTH_TOKEN_HERE':
             logger.warning("Twilio credentials not fully configured - using mock mode")
             return False
         
