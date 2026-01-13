@@ -18,10 +18,10 @@ load_dotenv(ROOT_DIR / '.env')
 # MongoDB connection
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ.get('DB_NAME', 'maahis_smartbook')]
+db = client[os.environ.get('DB_NAME', 'boutiquefit')]
 
 # Create the main app without a prefix
-app = FastAPI(title="Maahis SmartBook API")
+app = FastAPI(title="BoutiqueFit API")
 
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
@@ -317,7 +317,7 @@ async def login(credentials: UserLogin):
             success=True,
             message="Login successful",
             user_id="admin_001",
-            boutique_name="Maahis Designer Boutique"
+            boutique_name="BoutiqueFit"
         )
     
     return UserResponse(
@@ -837,7 +837,7 @@ async def get_whatsapp_payment_received(order_id: str, amount: float = 0):
         customer_phone = customer.get('phone', '') if customer else ''
         balance = payment.get('balance_amount', 0) if payment else 0
         
-        message = f"""🌟 *Maahis Designer Boutique* 🌟
+        message = f"""🌟 *BoutiqueFit* 🌟
 ━━━━━━━━━━━━━━━━━━━
 *Payment Received - Thank You!* 💰
 
@@ -849,7 +849,7 @@ We have received your payment of *₹{amount:.2f}* for your {order.get('order_ty
 
 ━━━━━━━━━━━━━━━━━━━
 Thank you for your payment! ✨
-*Maahis Designer Boutique*
+*BoutiqueFit*
 "Where Elegance Meets Perfection"
 """
         
@@ -1013,7 +1013,7 @@ async def get_whatsapp_order_confirmation(order_id: str):
         customer_phone = customer.get('phone', '') if customer else ''
         
         # Format message
-        message = f"""🌟 *Maahis Designer Boutique* 🌟
+        message = f"""🌟 *BoutiqueFit* 🌟
 ━━━━━━━━━━━━━━━━━━━
 *Order Confirmation*
 
@@ -1034,7 +1034,7 @@ Balance: ₹{payment.get('balance_amount', 0):.2f}
         
         message += """
 ━━━━━━━━━━━━━━━━━━━
-Thank you for choosing Maahis! ✨
+Thank you for choosing BoutiqueFit! ✨
 "Where Elegance Meets Perfection"
 """
         
@@ -1066,7 +1066,7 @@ async def get_whatsapp_delivery_reminder(order_id: str):
         customer_name = customer.get('name', 'Customer') if customer else 'Customer'
         customer_phone = customer.get('phone', '') if customer else ''
         
-        message = f"""🌟 *Maahis Designer Boutique* 🌟
+        message = f"""🌟 *BoutiqueFit* 🌟
 ━━━━━━━━━━━━━━━━━━━
 *Delivery Reminder*
 
@@ -1078,7 +1078,7 @@ Please ensure availability for pickup/delivery.
 
 ━━━━━━━━━━━━━━━━━━━
 Thank you! ✨
-*Maahis Designer Boutique*
+*BoutiqueFit*
 "Where Elegance Meets Perfection"
 """
         
@@ -1110,7 +1110,7 @@ async def get_whatsapp_balance_reminder(order_id: str):
         customer_phone = customer.get('phone', '') if customer else ''
         balance = payment.get('balance_amount', 0) if payment else 0
         
-        message = f"""🌟 *Maahis Designer Boutique* 🌟
+        message = f"""🌟 *BoutiqueFit* 🌟
 ━━━━━━━━━━━━━━━━━━━
 *Payment Reminder*
 
@@ -1122,7 +1122,7 @@ Kindly clear the balance at your earliest convenience.
 
 ━━━━━━━━━━━━━━━━━━━
 Thank you! ✨
-*Maahis Designer Boutique*
+*BoutiqueFit*
 "Where Elegance Meets Perfection"
 """
         
@@ -1144,7 +1144,7 @@ Thank you! ✨
 @api_router.get("/health")
 async def health_check():
     """Health check endpoint"""
-    return {"status": "healthy", "service": "Maahis SmartBook API"}
+    return {"status": "healthy", "service": "BoutiqueFit API"}
 
 # Include the router in the main app
 app.include_router(api_router)
