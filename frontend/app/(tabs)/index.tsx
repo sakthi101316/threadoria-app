@@ -148,7 +148,7 @@ export default function DashboardScreen() {
         >
           <Feather name="log-out" size={22} color={COLORS.error} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Maahis SmartBook</Text>
+        <Text style={styles.headerTitle}>BoutiqueFit</Text>
         <TouchableOpacity 
           style={styles.headerButton}
           onPress={() => router.push('/search')}
