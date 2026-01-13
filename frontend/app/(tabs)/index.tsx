@@ -381,10 +381,17 @@ const styles = StyleSheet.create({
   tagline: {
     fontSize: 14,
     fontStyle: 'italic',
-    color: COLORS.primary,
+    color: COLORS.gold,
+    textAlign: 'center',
+    marginBottom: SPACING.sm,
+    letterSpacing: 0.5,
+  },
+  boutiqueNameText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.gray,
     textAlign: 'center',
     marginBottom: SPACING.lg,
-    letterSpacing: 0.5,
   },
   statsGrid: {
     flexDirection: 'row',
