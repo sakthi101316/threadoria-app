@@ -200,7 +200,7 @@ export default function DashboardScreen() {
                 colors={['#FFFFFF', '#FFF5E6']}
                 style={styles.logoCircle}
               >
-                <MaterialCommunityIcons name="scissors-cutting" size={50} color={COLORS.primary} />
+                <MaterialCommunityIcons name="scissors-cutting" size={32} color={COLORS.primary} />
               </LinearGradient>
             </View>
           </View>
