@@ -1,64 +1,101 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TextInput,
-  Image,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   Alert,
   Animated,
   ActivityIndicator,
+  TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS, SPACING, BORDER_RADIUS, SHADOWS } from '../src/constants/theme';
+import { MaterialCommunityIcons, Feather } from '@expo/vector-icons';
+import { Audio } from 'expo-av';
+import { COLORS, SPACING, BORDER_RADIUS, SHADOWS, APP_CONFIG } from '../src/constants/theme';
 import { GoldButton } from '../src/components/GoldButton';
+import { AnimatedBackground } from '../src/components/AnimatedBackground';
 import { useAuth } from '../src/context/AuthContext';
-
-const LOGO_URL = 'https://customer-assets.emergentagent.com/job_fashion-tracker-10/artifacts/jedgi7jd_WhatsApp%20Image%202025-11-28%20at%207.10.00%20PM.jpeg';
 
 export default function LoginScreen() {
   const router = useRouter();
   const { login, isAuthenticated, isLoading } = useAuth();
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [pin, setPin] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
-  const fadeAnim = useState(new Animated.Value(1))[0];
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const scaleAnim = useRef(new Animated.Value(0.8)).current;
+  const rotateAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Show splash for 2 seconds
+    // Animate logo on splash
+    Animated.parallel([
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        tension: 50,
+        friction: 7,
+        useNativeDriver: true,
+      }),
+      Animated.timing(rotateAnim, {
+        toValue: 1,
+        duration: 1000,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Show splash for 2.5 seconds
     const timer = setTimeout(() => {
       Animated.timing(fadeAnim, {
         toValue: 0,
         duration: 500,
         useNativeDriver: true,
       }).start(() => setShowSplash(false));
-    }, 2000);
+    }, 2500);
 
     return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
     if (!isLoading && isAuthenticated && !showSplash) {
+      playWelcomeAudio();
       router.replace('/(tabs)');
     }
   }, [isAuthenticated, isLoading, showSplash]);
 
+  const playWelcomeAudio = async () => {
+    try {
+      // Use expo-av to play welcome sound
+      const { sound } = await Audio.Sound.createAsync(
+        { uri: 'https://www.soundjay.com/misc/sounds/magic-chime-02.mp3' },
+        { shouldPlay: true }
+      );
+      // Clean up after playing
+      sound.setOnPlaybackStatusUpdate((status) => {
+        if (status.isLoaded && status.didJustFinish) {
+          sound.unloadAsync();
+        }
+      });
+    } catch (error) {
+      console.log('Audio play error:', error);
+    }
+  };
+
   const handleLogin = async () => {
-    if (!username.trim() || !pin.trim()) {
-      Alert.alert('Error', 'Please enter username and PIN');
+    if (!email.trim() || !pin.trim()) {
+      Alert.alert('Error', 'Please enter email and PIN');
       return;
     }
 
     setLoginLoading(true);
     try {
-      const result = await login(username.trim(), pin.trim());
+      const result = await login(email.trim().toLowerCase(), pin.trim());
       if (result.success) {
+        await playWelcomeAudio();
         router.replace('/(tabs)');
       } else {
         Alert.alert('Login Failed', result.message);
@@ -70,106 +107,115 @@ export default function LoginScreen() {
     }
   };
 
+  const spin = rotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+
   if (isLoading || showSplash) {
     return (
       <Animated.View style={[styles.splashContainer, { opacity: fadeAnim }]}>
-        <LinearGradient
-          colors={[COLORS.cream, '#FFF5E6', COLORS.cream]}
-          style={StyleSheet.absoluteFill}
-        />
-        <Image source={{ uri: LOGO_URL }} style={styles.splashLogo} resizeMode="contain" />
-        <Text style={styles.tagline}>"Where Elegance Meets Perfection"</Text>
-        <ActivityIndicator size="large" color={COLORS.primary} style={{ marginTop: 30 }} />
+        <AnimatedBackground>
+          <View style={styles.splashContent}>
+            <Animated.View style={[styles.splashLogoCircle, { transform: [{ scale: scaleAnim }] }]}>
+              <Animated.View style={{ transform: [{ rotate: spin }] }}>
+                <MaterialCommunityIcons name="scissors-cutting" size={70} color={COLORS.primary} />
+              </Animated.View>
+            </Animated.View>
+            <Text style={styles.splashAppName}>{APP_CONFIG.name}</Text>
+            <Text style={styles.splashTagline}>{APP_CONFIG.tagline}</Text>
+            <ActivityIndicator size="large" color={COLORS.gold} style={{ marginTop: 40 }} />
+          </View>
+        </AnimatedBackground>
       </Animated.View>
     );
   }
 
   return (
     <SafeAreaView style={styles.container}>
-      <LinearGradient
-        colors={[COLORS.cream, '#FFF5E6', COLORS.cream]}
-        style={StyleSheet.absoluteFill}
-      />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.flex}
-      >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
+      <AnimatedBackground>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.flex}
         >
-          {/* Circular Logo Section */}
-          <View style={styles.logoSection}>
-            <LinearGradient
-              colors={['#FFFFFF', '#FFF5E6', '#FFE4C9']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.logoGradientBg}
-            >
-              <View style={styles.logoInnerCircle}>
-                <Image source={{ uri: LOGO_URL }} style={styles.logo} resizeMode="contain" />
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+          >
+            {/* Logo Section */}
+            <View style={styles.logoSection}>
+              <View style={styles.logoOuterRing}>
+                <View style={styles.logoMiddleRing}>
+                  <View style={styles.logoCircle}>
+                    <MaterialCommunityIcons name="scissors-cutting" size={55} color={COLORS.primary} />
+                  </View>
+                </View>
               </View>
-            </LinearGradient>
-            {/* Decorative rings */}
-            <View style={[styles.decorativeRing, styles.ring1]} />
-            <View style={[styles.decorativeRing, styles.ring2]} />
-          </View>
-          
-          <Text style={styles.taglineLogin}>"Where Elegance Meets Perfection"</Text>
-
-          <View style={styles.formCard}>
-            <Text style={styles.welcomeText}>Welcome Back</Text>
-            <Text style={styles.subtitleText}>Sign in to continue</Text>
-
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Username</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter username"
-                placeholderTextColor={COLORS.gray}
-                value={username}
-                onChangeText={setUsername}
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
+              <Text style={styles.appName}>{APP_CONFIG.name}</Text>
+              <Text style={styles.tagline}>{APP_CONFIG.tagline}</Text>
             </View>
 
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>PIN</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter 6-digit PIN"
-                placeholderTextColor={COLORS.gray}
-                value={pin}
-                onChangeText={setPin}
-                keyboardType="numeric"
-                secureTextEntry
-                maxLength={6}
+            <View style={styles.formCard}>
+              <Text style={styles.welcomeText}>Welcome Back</Text>
+              <Text style={styles.subtitleText}>Sign in to your boutique</Text>
+
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Email</Text>
+                <View style={styles.inputWrapper}>
+                  <Feather name="mail" size={20} color={COLORS.gray} style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter your email"
+                    placeholderTextColor={COLORS.gray}
+                    value={email}
+                    onChangeText={setEmail}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                </View>
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>PIN</Text>
+                <View style={styles.inputWrapper}>
+                  <Feather name="lock" size={20} color={COLORS.gray} style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter 6-digit PIN"
+                    placeholderTextColor={COLORS.gray}
+                    value={pin}
+                    onChangeText={setPin}
+                    keyboardType="numeric"
+                    secureTextEntry
+                    maxLength={6}
+                  />
+                </View>
+              </View>
+
+              <GoldButton
+                title="Login"
+                onPress={handleLogin}
+                loading={loginLoading}
+                style={styles.loginButton}
               />
+
+              <View style={styles.registerContainer}>
+                <Text style={styles.registerText}>New to BoutiqueFit?</Text>
+                <TouchableOpacity onPress={() => router.push('/register')}>
+                  <Text style={styles.registerLink}>Create Account</Text>
+                </TouchableOpacity>
+              </View>
             </View>
 
-            <GoldButton
-              title="Login"
-              onPress={handleLogin}
-              loading={loginLoading}
-              style={styles.loginButton}
-            />
-          </View>
-
-          {/* Powered By Footer */}
-          <View style={styles.footerContainer}>
-            <Text style={styles.footerText}>Maahis Designer Boutique</Text>
-            <View style={styles.poweredByContainer}>
-              <Text style={styles.poweredByText}>Powered by</Text>
-              <Image 
-                source={{ uri: 'https://customer-assets.emergentagent.com/job_fashion-tracker-10/artifacts/4vndu7j3_Shivam%20%281%29.png' }} 
-                style={styles.poweredByLogo} 
-                resizeMode="contain" 
-              />
+            {/* Footer */}
+            <View style={styles.footerContainer}>
+              <Text style={styles.footerText}>Boutique Management Made Simple</Text>
+              <Text style={styles.versionText}>v{APP_CONFIG.version}</Text>
             </View>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </AnimatedBackground>
     </SafeAreaView>
   );
 }
@@ -183,18 +229,33 @@ const styles = StyleSheet.create({
   },
   splashContainer: {
     flex: 1,
+  },
+  splashContent: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  splashLogo: {
-    width: 300,
-    height: 200,
+  splashLogoCircle: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: COLORS.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...SHADOWS.gold,
   },
-  tagline: {
-    fontSize: 18,
-    fontStyle: 'italic',
+  splashAppName: {
+    fontSize: 42,
+    fontWeight: 'bold',
     color: COLORS.primary,
-    marginTop: 20,
+    marginTop: SPACING.lg,
+    letterSpacing: 2,
+  },
+  splashTagline: {
+    fontSize: 16,
+    fontStyle: 'italic',
+    color: COLORS.gold,
+    marginTop: SPACING.sm,
   },
   scrollContent: {
     flexGrow: 1,
@@ -203,62 +264,47 @@ const styles = StyleSheet.create({
   },
   logoSection: {
     alignItems: 'center',
-    marginBottom: SPACING.sm,
-    position: 'relative',
+    marginBottom: SPACING.xl,
   },
-  logoGradientBg: {
+  logoOuterRing: {
     width: 160,
     height: 160,
     borderRadius: 80,
+    borderWidth: 2,
+    borderColor: COLORS.gold + '40',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#E7C475',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 8,
   },
-  logoInnerCircle: {
+  logoMiddleRing: {
     width: 140,
     height: 140,
     borderRadius: 70,
+    borderWidth: 2,
+    borderColor: COLORS.primary + '30',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logoCircle: {
+    width: 110,
+    height: 110,
+    borderRadius: 55,
     backgroundColor: COLORS.white,
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'hidden',
+    ...SHADOWS.gold,
   },
-  logo: {
-    width: 130,
-    height: 130,
+  appName: {
+    fontSize: 36,
+    fontWeight: 'bold',
+    color: COLORS.primary,
+    marginTop: SPACING.md,
+    letterSpacing: 1,
   },
-  decorativeRing: {
-    position: 'absolute',
-    borderWidth: 1.5,
-    borderRadius: 100,
-  },
-  ring1: {
-    width: 185,
-    height: 185,
-    borderColor: COLORS.gold + '40',
-    top: -12,
-  },
-  ring2: {
-    width: 210,
-    height: 210,
-    borderColor: COLORS.primary + '25',
-    top: -25,
-  },
-  taglineLogin: {
+  tagline: {
     fontSize: 14,
     fontStyle: 'italic',
-    color: COLORS.primary,
-    textAlign: 'center',
-    marginBottom: SPACING.lg,
-    letterSpacing: 0.5,
-  },
-  logoContainer: {
-    alignItems: 'center',
-    marginBottom: SPACING.xl,
+    color: COLORS.gold,
+    marginTop: SPACING.xs,
   },
   formCard: {
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
@@ -288,16 +334,41 @@ const styles = StyleSheet.create({
     color: COLORS.black,
     marginBottom: SPACING.xs,
   },
-  input: {
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: COLORS.cream,
     borderRadius: BORDER_RADIUS.md,
-    padding: SPACING.md,
-    fontSize: 16,
     borderWidth: 1,
     borderColor: COLORS.lightGray,
   },
+  inputIcon: {
+    paddingLeft: SPACING.md,
+  },
+  input: {
+    flex: 1,
+    padding: SPACING.md,
+    fontSize: 16,
+    color: COLORS.black,
+  },
   loginButton: {
     marginTop: SPACING.lg,
+  },
+  registerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: SPACING.lg,
+    gap: SPACING.xs,
+  },
+  registerText: {
+    fontSize: 14,
+    color: COLORS.gray,
+  },
+  registerLink: {
+    fontSize: 14,
+    color: COLORS.primary,
+    fontWeight: '600',
   },
   footerContainer: {
     alignItems: 'center',
@@ -308,20 +379,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: COLORS.gray,
     fontSize: 14,
-    marginBottom: SPACING.md,
   },
-  poweredByContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: SPACING.sm,
-  },
-  poweredByText: {
+  versionText: {
     fontSize: 12,
-    color: COLORS.gray,
-  },
-  poweredByLogo: {
-    width: 100,
-    height: 40,
+    color: COLORS.lightGray,
+    marginTop: SPACING.xs,
   },
 });
