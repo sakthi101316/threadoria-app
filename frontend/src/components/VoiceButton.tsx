@@ -1,10 +1,9 @@
-import React, { useState } from 'react';
-import { TouchableOpacity, StyleSheet, Animated, View, Text, Alert, Platform } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { TouchableOpacity, StyleSheet, Animated, View, Text, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
-import { COLORS, SHADOWS, BORDER_RADIUS } from '../constants/theme';
+import { COLORS, SHADOWS } from '../constants/theme';
 import { api } from '../services/api';
-import * as FileSystem from 'expo-file-system';
 
 interface VoiceButtonProps {
   onTranscription: (text: string) => void;
@@ -13,8 +12,9 @@ interface VoiceButtonProps {
 
 export function VoiceButton({ onTranscription, size = 60 }: VoiceButtonProps) {
   const [isRecording, setIsRecording] = useState(false);
-  const [recording, setRecording] = useState<Audio.Recording | null>(null);
-  const [scaleAnim] = useState(new Animated.Value(1));
+  const [isProcessing, setIsProcessing] = useState(false);
+  const recordingRef = useRef<Audio.Recording | null>(null);
+  const scaleAnim = useRef(new Animated.Value(1)).current;
 
   const startRecording = async () => {
     try {
@@ -33,7 +33,7 @@ export function VoiceButton({ onTranscription, size = 60 }: VoiceButtonProps) {
         Audio.RecordingOptionsPresets.HIGH_QUALITY
       );
       
-      setRecording(recording);
+      recordingRef.current = recording;
       setIsRecording(true);
 
       // Pulse animation
@@ -58,21 +58,32 @@ export function VoiceButton({ onTranscription, size = 60 }: VoiceButtonProps) {
   };
 
   const stopRecording = async () => {
-    if (!recording) return;
+    if (!recordingRef.current) return;
 
     try {
       scaleAnim.stopAnimation();
       scaleAnim.setValue(1);
       setIsRecording(false);
+      setIsProcessing(true);
 
-      await recording.stopAndUnloadAsync();
-      const uri = recording.getURI();
-      setRecording(null);
+      await recordingRef.current.stopAndUnloadAsync();
+      const uri = recordingRef.current.getURI();
+      recordingRef.current = null;
 
       if (uri) {
-        // Read audio file as base64
-        const base64Audio = await FileSystem.readAsStringAsync(uri, {
-          encoding: FileSystem.EncodingType.Base64,
+        // Read audio file using fetch
+        const response = await fetch(uri);
+        const blob = await response.blob();
+        
+        const base64Audio = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const result = reader.result as string;
+            const base64 = result.split(',')[1] || result;
+            resolve(base64);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
         });
 
         // Send to backend for transcription
@@ -81,19 +92,23 @@ export function VoiceButton({ onTranscription, size = 60 }: VoiceButtonProps) {
           if (result.success && result.text) {
             onTranscription(result.text);
           } else {
-            Alert.alert('Transcription Failed', 'Could not transcribe audio. Please try again.');
+            Alert.alert('Voice Input', 'Could not understand. Please try again.');
           }
         } catch (error) {
           console.error('Transcription error:', error);
-          Alert.alert('Error', 'Failed to transcribe audio');
+          Alert.alert('Error', 'Failed to process voice');
         }
       }
     } catch (error) {
       console.error('Failed to stop recording:', error);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
   const handlePress = () => {
+    if (isProcessing) return;
+    
     if (isRecording) {
       stopRecording();
     } else {
@@ -102,7 +117,7 @@ export function VoiceButton({ onTranscription, size = 60 }: VoiceButtonProps) {
   };
 
   return (
-    <TouchableOpacity onPress={handlePress} activeOpacity={0.8}>
+    <TouchableOpacity onPress={handlePress} activeOpacity={0.8} disabled={isProcessing}>
       <Animated.View
         style={[
           styles.button,
@@ -111,19 +126,21 @@ export function VoiceButton({ onTranscription, size = 60 }: VoiceButtonProps) {
             height: size,
             borderRadius: size / 2,
             transform: [{ scale: scaleAnim }],
-            backgroundColor: isRecording ? COLORS.primary : COLORS.gold,
+            backgroundColor: isRecording ? COLORS.primary : isProcessing ? COLORS.gray : COLORS.gold,
           },
         ]}
       >
         <Ionicons
-          name={isRecording ? 'stop' : 'mic'}
+          name={isRecording ? 'stop' : isProcessing ? 'hourglass' : 'mic'}
           size={size * 0.4}
           color={COLORS.white}
         />
       </Animated.View>
-      {isRecording && (
+      {(isRecording || isProcessing) && (
         <View style={styles.recordingIndicator}>
-          <Text style={styles.recordingText}>Recording...</Text>
+          <Text style={styles.recordingText}>
+            {isRecording ? 'Recording...' : 'Processing...'}
+          </Text>
         </View>
       )}
     </TouchableOpacity>
