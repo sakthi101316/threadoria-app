@@ -38,10 +38,10 @@ class ApiService {
   }
 
   // Registration
-  async sendOTP(email: string) {
+  async sendOTP(phone: string) {
     return this.request<{ success: boolean; message: string }>('/auth/send-otp', {
       method: 'POST',
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({ phone }),
     });
   }
 
