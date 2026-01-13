@@ -79,7 +79,7 @@ export default function SettingsScreen() {
         <GlassCard style={styles.section}>
           <Text style={styles.sectionTitle}>App Information</Text>
           <MenuItem icon="information-circle" title="Version" subtitle="1.0.0" />
-          <MenuItem icon="business" title="Boutique" subtitle="Maahis Designer Boutique" />
+          <MenuItem icon="business" title="Boutique" subtitle="Your Boutique" />
         </GlassCard>
 
         {/* Actions */}
