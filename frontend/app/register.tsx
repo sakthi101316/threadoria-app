@@ -59,7 +59,7 @@ export default function RegisterScreen() {
       return;
     }
     if (!phone.trim() || phone.length < 10) {
-      Alert.alert('Error', 'Please enter a valid phone number');
+      Alert.alert('Error', 'Please enter a valid phone number (10 digits)');
       return;
     }
     if (pin.length !== 6) {
@@ -73,9 +73,9 @@ export default function RegisterScreen() {
 
     setLoading(true);
     try {
-      const result = await api.sendOTP(email);
+      const result = await api.sendOTP(phone);
       if (result.success) {
-        Alert.alert('OTP Sent', `Verification code sent to ${email}`);
+        Alert.alert('OTP Sent', result.message);
         setStep(2);
       } else {
         Alert.alert('Error', result.message || 'Failed to send OTP');
@@ -107,7 +107,7 @@ export default function RegisterScreen() {
       if (result.success) {
         Alert.alert(
           'Registration Successful!', 
-          'Welcome to BoutiqueFit! Please login with your email and PIN.',
+          'Welcome to BoutiqueFit! Please login with your phone number and PIN.',
           [{ text: 'Login Now', onPress: () => router.replace('/') }]
         );
       } else {
@@ -187,7 +187,7 @@ export default function RegisterScreen() {
                   </View>
 
                   <View style={styles.inputContainer}>
-                    <Text style={styles.inputLabel}>Email</Text>
+                    <Text style={styles.inputLabel}>Email (for cloud backup)</Text>
                     <View style={styles.inputWrapper}>
                       <Feather name="mail" size={20} color={COLORS.gray} style={styles.inputIcon} />
                       <TextInput
@@ -206,17 +206,18 @@ export default function RegisterScreen() {
                   </View>
 
                   <View style={styles.inputContainer}>
-                    <Text style={styles.inputLabel}>Phone Number</Text>
+                    <Text style={styles.inputLabel}>Mobile Number (for OTP verification)</Text>
                     <View style={styles.inputWrapper}>
-                      <Feather name="phone" size={20} color={COLORS.gray} style={styles.inputIcon} />
+                      <Text style={styles.countryCode}>+91</Text>
                       <TextInput
                         ref={phoneRef}
                         style={styles.input}
-                        placeholder="Enter phone number"
+                        placeholder="Enter 10-digit mobile number"
                         placeholderTextColor={COLORS.gray}
                         value={phone}
-                        onChangeText={setPhone}
+                        onChangeText={(text) => setPhone(text.replace(/[^0-9]/g, '').slice(0, 10))}
                         keyboardType="phone-pad"
+                        maxLength={10}
                         returnKeyType="next"
                         onSubmitEditing={() => pinRef.current?.focus()}
                       />
@@ -271,8 +272,8 @@ export default function RegisterScreen() {
                 </>
               ) : (
                 <>
-                  <Text style={styles.title}>Verify Email</Text>
-                  <Text style={styles.subtitle}>Enter the 6-digit code sent to {email}</Text>
+                  <Text style={styles.title}>Verify Mobile</Text>
+                  <Text style={styles.subtitle}>Enter the 6-digit code sent to +91{phone}</Text>
 
                   <View style={styles.otpContainer}>
                     <TextInput
@@ -299,7 +300,7 @@ export default function RegisterScreen() {
                   </TouchableOpacity>
 
                   <TouchableOpacity style={styles.changeEmailButton} onPress={() => setStep(1)}>
-                    <Text style={styles.changeEmailText}>← Change email</Text>
+                    <Text style={styles.changeEmailText}>← Change details</Text>
                   </TouchableOpacity>
                 </>
               )}
@@ -412,6 +413,12 @@ const styles = StyleSheet.create({
   },
   inputIcon: {
     paddingLeft: SPACING.md,
+  },
+  countryCode: {
+    paddingLeft: SPACING.md,
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.black,
   },
   input: {
     flex: 1,
