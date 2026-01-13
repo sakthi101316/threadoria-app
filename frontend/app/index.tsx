@@ -222,12 +222,11 @@ export default function LoginScreen() {
               {/* Footer with Shivom Creatives */}
               <View style={styles.footerContainer}>
                 <Text style={styles.poweredByText}>Powered by</Text>
-                <View style={styles.shivomLogoContainer}>
-                  <View style={styles.shivomLogoCircle}>
-                    <Text style={styles.shivomLogoText}>SC</Text>
-                  </View>
-                </View>
-                <Text style={styles.shivomName}>Shivom Creatives</Text>
+                <Image
+                  source={{ uri: 'https://customer-assets.emergentagent.com/job_boutique-manager-17/artifacts/e5ms1oga_Shivam%20%281%29.png' }}
+                  style={styles.shivomLogo}
+                  resizeMode="contain"
+                />
                 <Text style={styles.versionText}>v{APP_CONFIG.version}</Text>
               </View>
             </ScrollView>
