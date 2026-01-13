@@ -221,20 +221,108 @@ def serialize_doc(doc):
 
 # ========================== AUTH ROUTES ==========================
 
+# In-memory OTP storage (for demo - use Redis in production)
+otp_storage = {}
+
+import random
+import string
+
+def generate_otp():
+    return ''.join(random.choices(string.digits, k=6))
+
+@api_router.post("/auth/send-otp")
+async def send_otp(request: SendOTPRequest):
+    """Send OTP to email for registration"""
+    email = request.email.lower()
+    
+    # Check if email already registered
+    existing_user = await db.users.find_one({"email": email})
+    if existing_user:
+        return {"success": False, "message": "Email already registered. Please login."}
+    
+    # Generate OTP
+    otp = generate_otp()
+    otp_storage[email] = {
+        "otp": otp,
+        "created_at": datetime.utcnow()
+    }
+    
+    # TODO: Send email when API key is provided
+    # For now, we'll accept any 6-digit OTP for demo (mock mode)
+    logger.info(f"OTP for {email}: {otp} (MOCKED - accept any 6-digit code)")
+    
+    return {"success": True, "message": f"OTP sent to {email}. For demo, use any 6-digit code."}
+
+@api_router.post("/auth/register", response_model=UserResponse)
+async def register(data: UserRegister):
+    """Register a new boutique"""
+    email = data.email.lower()
+    
+    # Check if email already registered
+    existing_user = await db.users.find_one({"email": email})
+    if existing_user:
+        return UserResponse(success=False, message="Email already registered")
+    
+    # Verify OTP (for demo, accept any 6-digit code)
+    if len(data.otp) != 6 or not data.otp.isdigit():
+        return UserResponse(success=False, message="Invalid OTP format")
+    
+    # In production, verify against stored OTP
+    # stored_otp = otp_storage.get(email)
+    # if not stored_otp or stored_otp["otp"] != data.otp:
+    #     return UserResponse(success=False, message="Invalid or expired OTP")
+    
+    # Create user
+    user_doc = {
+        "boutique_name": data.boutique_name,
+        "owner_name": data.owner_name,
+        "email": email,
+        "phone": data.phone,
+        "pin": data.pin,
+        "created_at": datetime.utcnow(),
+        "is_active": True
+    }
+    
+    result = await db.users.insert_one(user_doc)
+    
+    # Clear OTP
+    if email in otp_storage:
+        del otp_storage[email]
+    
+    return UserResponse(
+        success=True,
+        message="Registration successful! Please login.",
+        user_id=str(result.inserted_id),
+        boutique_name=data.boutique_name
+    )
+
 @api_router.post("/auth/login", response_model=UserResponse)
 async def login(credentials: UserLogin):
-    """Login with username and PIN"""
-    # Fixed credentials as per user requirement
-    if credentials.username.upper() == "MAAHIS" and credentials.pin == "101316":
+    """Login with email and PIN"""
+    email = credentials.email.lower()
+    
+    # Check in database
+    user = await db.users.find_one({"email": email, "pin": credentials.pin})
+    if user:
+        return UserResponse(
+            success=True,
+            message="Login successful",
+            user_id=str(user["_id"]),
+            boutique_name=user.get("boutique_name", "Boutique")
+        )
+    
+    # Legacy support: Check fixed credentials
+    if email.upper() == "MAAHIS" and credentials.pin == "101316":
         return UserResponse(
             success=True,
             message="Login successful",
             user_id="admin_001",
-            username="MAAHIS"
+            boutique_name="Maahis Designer Boutique"
         )
+    
     return UserResponse(
         success=False,
-        message="Invalid username or PIN"
+        message="Invalid email or PIN"
     )
 
 # ========================== CUSTOMER ROUTES ==========================
