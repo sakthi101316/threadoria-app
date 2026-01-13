@@ -30,10 +30,32 @@ class ApiService {
   }
 
   // Auth
-  async login(username: string, pin: string) {
-    return this.request<{ success: boolean; message: string; user_id?: string; username?: string }>('/auth/login', {
+  async login(email: string, pin: string) {
+    return this.request<{ success: boolean; message: string; user_id?: string; boutique_name?: string }>('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ username, pin }),
+      body: JSON.stringify({ email, pin }),
+    });
+  }
+
+  // Registration
+  async sendOTP(email: string) {
+    return this.request<{ success: boolean; message: string }>('/auth/send-otp', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  }
+
+  async register(data: {
+    boutique_name: string;
+    owner_name: string;
+    email: string;
+    phone: string;
+    pin: string;
+    otp: string;
+  }) {
+    return this.request<{ success: boolean; message: string; user_id?: string }>('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(data),
     });
   }
 
