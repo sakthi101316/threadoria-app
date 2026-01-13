@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,9 @@ import {
   ScrollView,
   Alert,
   TouchableOpacity,
+  TouchableWithoutFeedback,
+  Keyboard,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -20,7 +23,7 @@ import { api } from '../src/services/api';
 
 export default function RegisterScreen() {
   const router = useRouter();
-  const [step, setStep] = useState(1); // 1: Details, 2: OTP Verification
+  const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   
   // Form fields
@@ -32,12 +35,18 @@ export default function RegisterScreen() {
   const [confirmPin, setConfirmPin] = useState('');
   const [otp, setOtp] = useState('');
 
+  // Refs for focusing next input
+  const ownerNameRef = useRef<TextInput>(null);
+  const emailRef = useRef<TextInput>(null);
+  const phoneRef = useRef<TextInput>(null);
+  const pinRef = useRef<TextInput>(null);
+  const confirmPinRef = useRef<TextInput>(null);
+
   const validateEmail = (email: string) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
 
   const handleSendOTP = async () => {
-    // Validation
     if (!boutiqueName.trim()) {
       Alert.alert('Error', 'Please enter your boutique name');
       return;
@@ -112,14 +121,18 @@ export default function RegisterScreen() {
     }
   };
 
-  const InputField = ({ label, icon, ...props }: any) => (
+  const InputField = ({ label, icon, inputRef, onSubmit, ...props }: any) => (
     <View style={styles.inputContainer}>
       <Text style={styles.inputLabel}>{label}</Text>
       <View style={styles.inputWrapper}>
         <Feather name={icon} size={20} color={COLORS.gray} style={styles.inputIcon} />
         <TextInput
+          ref={inputRef}
           style={styles.input}
           placeholderTextColor={COLORS.gray}
+          returnKeyType="next"
+          blurOnSubmit={false}
+          onSubmitEditing={onSubmit}
           {...props}
         />
       </View>
@@ -132,133 +145,160 @@ export default function RegisterScreen() {
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.flex}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
         >
-          <ScrollView
-            contentContainerStyle={styles.scrollContent}
-            keyboardShouldPersistTaps="handled"
-          >
-            {/* Back Button */}
-            <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-              <Feather name="arrow-left" size={24} color={COLORS.black} />
-            </TouchableOpacity>
-
-            {/* Logo Section */}
-            <View style={styles.logoSection}>
-              <View style={styles.logoCircle}>
-                <MaterialCommunityIcons name="scissors-cutting" size={50} color={COLORS.primary} />
-              </View>
-              <Text style={styles.appName}>{APP_CONFIG.name}</Text>
-              <Text style={styles.tagline}>{APP_CONFIG.tagline}</Text>
-            </View>
-
-            <View style={styles.formCard}>
-              {step === 1 ? (
-                <>
-                  <Text style={styles.title}>Create Account</Text>
-                  <Text style={styles.subtitle}>Join thousands of boutiques</Text>
-
-                  <InputField
-                    label="Boutique Name"
-                    icon="shopping-bag"
-                    placeholder="Enter your boutique name"
-                    value={boutiqueName}
-                    onChangeText={setBoutiqueName}
-                  />
-                  <InputField
-                    label="Owner Name"
-                    icon="user"
-                    placeholder="Enter owner name"
-                    value={ownerName}
-                    onChangeText={setOwnerName}
-                  />
-                  <InputField
-                    label="Email"
-                    icon="mail"
-                    placeholder="Enter email address"
-                    value={email}
-                    onChangeText={setEmail}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                  />
-                  <InputField
-                    label="Phone Number"
-                    icon="phone"
-                    placeholder="Enter phone number"
-                    value={phone}
-                    onChangeText={setPhone}
-                    keyboardType="phone-pad"
-                  />
-                  <InputField
-                    label="Create PIN (6 digits)"
-                    icon="lock"
-                    placeholder="Enter 6-digit PIN"
-                    value={pin}
-                    onChangeText={setPin}
-                    keyboardType="numeric"
-                    secureTextEntry
-                    maxLength={6}
-                  />
-                  <InputField
-                    label="Confirm PIN"
-                    icon="lock"
-                    placeholder="Re-enter PIN"
-                    value={confirmPin}
-                    onChangeText={setConfirmPin}
-                    keyboardType="numeric"
-                    secureTextEntry
-                    maxLength={6}
-                  />
-
-                  <GoldButton
-                    title="Send OTP"
-                    onPress={handleSendOTP}
-                    loading={loading}
-                    style={styles.submitButton}
-                  />
-                </>
-              ) : (
-                <>
-                  <Text style={styles.title}>Verify Email</Text>
-                  <Text style={styles.subtitle}>Enter the 6-digit code sent to {email}</Text>
-
-                  <View style={styles.otpContainer}>
-                    <TextInput
-                      style={styles.otpInput}
-                      placeholder="000000"
-                      placeholderTextColor={COLORS.lightGray}
-                      value={otp}
-                      onChangeText={setOtp}
-                      keyboardType="numeric"
-                      maxLength={6}
-                      textAlign="center"
-                    />
-                  </View>
-
-                  <GoldButton
-                    title="Verify & Register"
-                    onPress={handleVerifyOTP}
-                    loading={loading}
-                    style={styles.submitButton}
-                  />
-
-                  <TouchableOpacity style={styles.resendButton} onPress={handleSendOTP}>
-                    <Text style={styles.resendText}>Didn't receive code? Resend</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity style={styles.changeEmailButton} onPress={() => setStep(1)}>
-                    <Text style={styles.changeEmailText}>← Change email</Text>
-                  </TouchableOpacity>
-                </>
-              )}
-            </View>
-
-            <View style={styles.footer}>
-              <Text style={styles.footerText}>Already have an account?</Text>
-              <TouchableOpacity onPress={() => router.replace('/')}>
-                <Text style={styles.loginLink}>Login here</Text>
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <ScrollView
+              contentContainerStyle={styles.scrollContent}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              {/* Back Button */}
+              <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+                <Feather name="arrow-left" size={24} color={COLORS.black} />
               </TouchableOpacity>
-            </View>
-          </ScrollView>
+
+              {/* Logo Section */}
+              <View style={styles.logoSection}>
+                <View style={styles.logoCircle}>
+                  <MaterialCommunityIcons name="scissors-cutting" size={50} color={COLORS.primary} />
+                </View>
+                <Text style={styles.appName}>{APP_CONFIG.name}</Text>
+                <Text style={styles.tagline}>{APP_CONFIG.tagline}</Text>
+              </View>
+
+              <View style={styles.formCard}>
+                {step === 1 ? (
+                  <>
+                    <Text style={styles.title}>Create Account</Text>
+                    <Text style={styles.subtitle}>Join thousands of boutiques</Text>
+
+                    <InputField
+                      label="Boutique Name"
+                      icon="shopping-bag"
+                      placeholder="Enter your boutique name"
+                      value={boutiqueName}
+                      onChangeText={setBoutiqueName}
+                      onSubmit={() => ownerNameRef.current?.focus()}
+                    />
+                    <InputField
+                      label="Owner Name"
+                      icon="user"
+                      placeholder="Enter owner name"
+                      value={ownerName}
+                      onChangeText={setOwnerName}
+                      inputRef={ownerNameRef}
+                      onSubmit={() => emailRef.current?.focus()}
+                    />
+                    <InputField
+                      label="Email"
+                      icon="mail"
+                      placeholder="Enter email address"
+                      value={email}
+                      onChangeText={setEmail}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      inputRef={emailRef}
+                      onSubmit={() => phoneRef.current?.focus()}
+                    />
+                    <InputField
+                      label="Phone Number"
+                      icon="phone"
+                      placeholder="Enter phone number"
+                      value={phone}
+                      onChangeText={setPhone}
+                      keyboardType="phone-pad"
+                      inputRef={phoneRef}
+                      onSubmit={() => pinRef.current?.focus()}
+                    />
+                    <InputField
+                      label="Create PIN (6 digits)"
+                      icon="lock"
+                      placeholder="Enter 6-digit PIN"
+                      value={pin}
+                      onChangeText={setPin}
+                      keyboardType="numeric"
+                      secureTextEntry
+                      maxLength={6}
+                      inputRef={pinRef}
+                      onSubmit={() => confirmPinRef.current?.focus()}
+                    />
+                    <InputField
+                      label="Confirm PIN"
+                      icon="lock"
+                      placeholder="Re-enter PIN"
+                      value={confirmPin}
+                      onChangeText={setConfirmPin}
+                      keyboardType="numeric"
+                      secureTextEntry
+                      maxLength={6}
+                      inputRef={confirmPinRef}
+                      returnKeyType="done"
+                      onSubmit={Keyboard.dismiss}
+                    />
+
+                    <GoldButton
+                      title="Send OTP"
+                      onPress={handleSendOTP}
+                      loading={loading}
+                      style={styles.submitButton}
+                    />
+                  </>
+                ) : (
+                  <>
+                    <Text style={styles.title}>Verify Email</Text>
+                    <Text style={styles.subtitle}>Enter the 6-digit code sent to {email}</Text>
+
+                    <View style={styles.otpContainer}>
+                      <TextInput
+                        style={styles.otpInput}
+                        placeholder="000000"
+                        placeholderTextColor={COLORS.lightGray}
+                        value={otp}
+                        onChangeText={setOtp}
+                        keyboardType="numeric"
+                        maxLength={6}
+                        textAlign="center"
+                      />
+                    </View>
+
+                    <GoldButton
+                      title="Verify & Register"
+                      onPress={handleVerifyOTP}
+                      loading={loading}
+                      style={styles.submitButton}
+                    />
+
+                    <TouchableOpacity style={styles.resendButton} onPress={handleSendOTP}>
+                      <Text style={styles.resendText}>Didn't receive code? Resend</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={styles.changeEmailButton} onPress={() => setStep(1)}>
+                      <Text style={styles.changeEmailText}>← Change email</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+              </View>
+
+              <View style={styles.footer}>
+                <Text style={styles.footerText}>Already have an account?</Text>
+                <TouchableOpacity onPress={() => router.replace('/')}>
+                  <Text style={styles.loginLink}>Login here</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Powered by Shivom Creatives */}
+              <View style={styles.poweredByContainer}>
+                <Text style={styles.poweredByText}>Powered by</Text>
+                <Image
+                  source={{ uri: 'https://customer-assets.emergentagent.com/job_boutique-manager-17/artifacts/shivom_creatives_logo.png' }}
+                  style={styles.poweredByLogo}
+                  resizeMode="contain"
+                />
+                <Text style={styles.poweredByName}>Shivom Creatives</Text>
+              </View>
+            </ScrollView>
+          </TouchableWithoutFeedback>
         </KeyboardAvoidingView>
       </AnimatedBackground>
     </SafeAreaView>
@@ -308,7 +348,7 @@ const styles = StyleSheet.create({
   },
   tagline: {
     fontSize: 14,
-    color: COLORS.gray,
+    color: COLORS.gold,
     fontStyle: 'italic',
   },
   formCard: {
@@ -405,5 +445,27 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontSize: 14,
     fontWeight: '600',
+  },
+  poweredByContainer: {
+    alignItems: 'center',
+    marginTop: SPACING.xl,
+    paddingBottom: SPACING.lg,
+  },
+  poweredByText: {
+    fontSize: 12,
+    color: COLORS.gray,
+    marginBottom: SPACING.xs,
+  },
+  poweredByLogo: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: COLORS.white,
+  },
+  poweredByName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.primary,
+    marginTop: SPACING.xs,
   },
 });
