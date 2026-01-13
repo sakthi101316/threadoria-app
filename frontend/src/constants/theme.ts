@@ -25,7 +25,7 @@ export const COLORS = {
 
 export const APP_CONFIG = {
   name: 'BoutiqueFit',
-  tagline: 'Your Perfect Fit, Every Time',
+  tagline: 'Where Elegance Meets Perfection',
   version: '2.0.0',
 };
 
