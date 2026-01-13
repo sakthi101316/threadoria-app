@@ -346,6 +346,73 @@ export default function AddOrderScreen() {
             </View>
           </GlassCard>
 
+          {/* Measurements Section - Collapsible */}
+          <GlassCard style={styles.section}>
+            <TouchableOpacity 
+              style={styles.measurementHeaderRow}
+              onPress={() => setShowMeasurements(!showMeasurements)}
+            >
+              <View>
+                <Text style={styles.sectionTitle}>Measurements (Optional)</Text>
+                <Text style={styles.measurementNote}>Add measurements with this order</Text>
+              </View>
+              <Ionicons 
+                name={showMeasurements ? "chevron-up" : "chevron-down"} 
+                size={24} 
+                color={COLORS.gray} 
+              />
+            </TouchableOpacity>
+            
+            {showMeasurements && (
+              <View style={styles.measurementsContent}>
+                {/* Category Toggle */}
+                <View style={styles.categoryToggle}>
+                  <TouchableOpacity
+                    style={[styles.categoryButton, measurementCategory === 'Top' && styles.categoryButtonActive]}
+                    onPress={() => setMeasurementCategory('Top')}
+                  >
+                    <Text style={[styles.categoryText, measurementCategory === 'Top' && styles.categoryTextActive]}>
+                      Top
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.categoryButton, measurementCategory === 'Bottom' && styles.categoryButtonActive]}
+                    onPress={() => setMeasurementCategory('Bottom')}
+                  >
+                    <Text style={[styles.categoryText, measurementCategory === 'Bottom' && styles.categoryTextActive]}>
+                      Bottom
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Measurements Grid */}
+                <View style={styles.measurementsGrid}>
+                  {(measurementCategory === 'Top' ? topFields : bottomFields).map((field) => (
+                    <View key={field.key} style={styles.measurementInput}>
+                      <Text style={styles.measurementLabel}>{field.label}</Text>
+                      <TextInput
+                        style={styles.measurementInputField}
+                        placeholder="0"
+                        placeholderTextColor={COLORS.gray}
+                        value={measurementCategory === 'Top' 
+                          ? topMeasurements[field.key as keyof typeof topMeasurements] 
+                          : bottomMeasurements[field.key as keyof typeof bottomMeasurements]}
+                        onChangeText={(v) => {
+                          if (measurementCategory === 'Top') {
+                            setTopMeasurements(prev => ({ ...prev, [field.key]: v }));
+                          } else {
+                            setBottomMeasurements(prev => ({ ...prev, [field.key]: v }));
+                          }
+                        }}
+                        keyboardType="numeric"
+                      />
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+          </GlassCard>
+
           {/* Payment */}
           <GlassCard style={styles.section}>
             <Text style={styles.sectionTitle}>Payment</Text>
