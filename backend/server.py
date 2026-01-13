@@ -954,10 +954,10 @@ async def transcribe_voice(request: VoiceTranscriptionRequest):
     try:
         import openai
         
-        emergent_key = os.environ.get('EMERGENT_LLM_KEY')
-        if not emergent_key:
-            logger.error("EMERGENT_LLM_KEY not configured")
-            raise HTTPException(status_code=500, detail="EMERGENT_LLM_KEY not configured")
+        openai_key = os.environ.get('OPENAI_API_KEY')
+        if not openai_key:
+            logger.error("OPENAI_API_KEY not configured")
+            raise HTTPException(status_code=500, detail="OPENAI_API_KEY not configured")
         
         # Decode base64 audio
         audio_data = base64.b64decode(request.audio_base64)
@@ -968,11 +968,8 @@ async def transcribe_voice(request: VoiceTranscriptionRequest):
         with open(temp_path, 'wb') as f:
             f.write(audio_data)
         
-        # Use OpenAI Whisper directly with OpenAI API
-        client = openai.OpenAI(
-            api_key=emergent_key,
-            base_url="https://api.openai.com/v1"
-        )
+        # Use OpenAI Whisper with the provided API key
+        client = openai.OpenAI(api_key=openai_key)
         
         with open(temp_path, 'rb') as audio_file:
             transcription = client.audio.transcriptions.create(
