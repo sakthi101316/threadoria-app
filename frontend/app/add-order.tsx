@@ -870,4 +870,67 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 16,
   },
+  measurementHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  measurementNote: {
+    fontSize: 12,
+    color: COLORS.gray,
+    marginTop: 2,
+  },
+  measurementsContent: {
+    marginTop: SPACING.md,
+    paddingTop: SPACING.md,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.lightGray,
+  },
+  categoryToggle: {
+    flexDirection: 'row',
+    backgroundColor: COLORS.cream,
+    borderRadius: BORDER_RADIUS.md,
+    padding: 4,
+    marginBottom: SPACING.md,
+  },
+  categoryButton: {
+    flex: 1,
+    paddingVertical: SPACING.sm,
+    borderRadius: BORDER_RADIUS.sm,
+    alignItems: 'center',
+  },
+  categoryButtonActive: {
+    backgroundColor: COLORS.primary,
+  },
+  categoryText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.gray,
+  },
+  categoryTextActive: {
+    color: COLORS.white,
+  },
+  measurementsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: SPACING.sm,
+  },
+  measurementInput: {
+    width: '31%',
+  },
+  measurementLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: COLORS.gray,
+    marginBottom: 4,
+  },
+  measurementInputField: {
+    backgroundColor: COLORS.cream,
+    borderRadius: BORDER_RADIUS.sm,
+    padding: SPACING.sm,
+    fontSize: 14,
+    borderWidth: 1,
+    borderColor: COLORS.lightGray,
+    textAlign: 'center',
+  },
 });
