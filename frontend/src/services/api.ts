@@ -60,8 +60,12 @@ class ApiService {
   }
 
   // Customers
-  async getCustomers(search?: string) {
-    const query = search ? `?search=${encodeURIComponent(search)}` : '';
+  async getCustomers(search?: string, userId?: string) {
+    let query = '';
+    const params = [];
+    if (search) params.push(`search=${encodeURIComponent(search)}`);
+    if (userId) params.push(`user_id=${encodeURIComponent(userId)}`);
+    if (params.length > 0) query = '?' + params.join('&');
     return this.request<any[]>(`/customers${query}`);
   }
 
