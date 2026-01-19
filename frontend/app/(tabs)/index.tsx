@@ -147,8 +147,8 @@ export default function DashboardScreen() {
                 { 
                   text: 'Logout', 
                   style: 'destructive',
-                  onPress: async () => {
-                    await logout();
+                  onPress: () => {
+                    logout();
                     router.replace('/');
                   }
                 },
