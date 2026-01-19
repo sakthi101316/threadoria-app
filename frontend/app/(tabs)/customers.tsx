@@ -17,6 +17,7 @@ import { COLORS, SPACING, BORDER_RADIUS, SHADOWS } from '../../src/constants/the
 import { GlassCard } from '../../src/components/GlassCard';
 import { GoldButton } from '../../src/components/GoldButton';
 import { api } from '../../src/services/api';
+import { useAuth } from '../../src/context/AuthContext';
 
 interface Customer {
   id: string;
@@ -30,6 +31,7 @@ interface Customer {
 
 export default function CustomersScreen() {
   const router = useRouter();
+  const { user } = useAuth();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
@@ -37,7 +39,7 @@ export default function CustomersScreen() {
 
   const fetchCustomers = async (search?: string) => {
     try {
-      const data = await api.getCustomers(search);
+      const data = await api.getCustomers(search, user?.user_id);
       setCustomers(data);
     } catch (error) {
       console.error('Failed to fetch customers:', error);
