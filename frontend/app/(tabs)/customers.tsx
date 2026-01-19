@@ -95,7 +95,7 @@ export default function CustomersScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={['left', 'right']}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <LinearGradient
         colors={[COLORS.cream, '#FFF5E6', COLORS.cream]}
         style={StyleSheet.absoluteFill}
