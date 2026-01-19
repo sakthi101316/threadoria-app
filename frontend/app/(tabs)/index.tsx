@@ -140,6 +140,9 @@ export default function DashboardScreen() {
           style={styles.logoutButton}
           onPress={async () => {
             await logout();
+            while (router.canGoBack()) {
+              router.back();
+            }
             router.replace('/');
           }}
         >
