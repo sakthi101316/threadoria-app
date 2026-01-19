@@ -63,10 +63,7 @@ export default function LoginScreen() {
   }, []);
 
   useEffect(() => {
-    if (!isLoading && isAuthenticated && !showSplash) {
-      playWelcomeAudio();
-      router.replace('/(tabs)');
-    }
+    // Don't auto-redirect - let _layout.tsx handle auth routing
   }, [isAuthenticated, isLoading, showSplash]);
 
   const playWelcomeAudio = async () => {
