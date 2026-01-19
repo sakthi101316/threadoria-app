@@ -2,6 +2,8 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter, useSegments } from 'expo-router';
 
+const API_BASE = process.env.EXPO_PUBLIC_BACKEND_URL || '';
+
 interface User {
   user_id: string;
   username: string;
@@ -12,6 +14,7 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  login: (phone: string, pin: string) => Promise<{ success: boolean; message: string }>;
   signIn: (token: string, userData: User) => Promise<void>;
   logout: () => void;
 }
@@ -67,6 +70,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const login = async (phone: string, pin: string): Promise<{ success: boolean; message: string }> => {
+    try {
+      const response = await fetch(`${API_BASE}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, pin }),
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        const userData: User = {
+          user_id: data.user_id,
+          username: data.username || phone,
+          boutique_name: data.boutique_name || 'My Boutique',
+        };
+        await signIn(data.token || 'authenticated', userData);
+        return { success: true, message: 'Login successful' };
+      } else {
+        return { success: false, message: data.detail || data.message || 'Invalid credentials' };
+      }
+    } catch (error: any) {
+      return { success: false, message: error.message || 'Login failed' };
+    }
+  };
+
   const signIn = async (token: string, userData: User) => {
     await AsyncStorage.setItem('auth_token', token);
     await AsyncStorage.setItem('user_data', JSON.stringify(userData));
@@ -85,7 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, isLoading, signIn, logout }}>
+    <AuthContext.Provider value={{ user, isAuthenticated, isLoading, login, signIn, logout }}>
       {children}
     </AuthContext.Provider>
   );
