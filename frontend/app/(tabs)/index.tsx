@@ -138,8 +138,8 @@ export default function DashboardScreen() {
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.logoutButton}
-          onPress={() => {
-            logout();
+          onPress={async () => {
+            await logout();
             router.replace('/');
           }}
         >
