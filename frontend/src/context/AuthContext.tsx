@@ -49,7 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response = await fetch(`${API_BASE}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone, pin }),
+        body: JSON.stringify({ email: phone, pin: pin }),
       });
       
       const data = await response.json();
