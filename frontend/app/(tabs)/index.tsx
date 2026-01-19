@@ -207,12 +207,15 @@ export default function DashboardScreen() {
         }
         showsVerticalScrollIndicator={false}
       >
-        {/* Welcome Text with Boutique Name */}
-        {user?.boutique_name && (
-          <Text style={styles.welcomeText}>Welcome, {user.boutique_name}</Text>
-        )}
+        {/* Boutique Name Header */}
+        <View style={styles.boutiqueHeader}>
+          <MaterialCommunityIcons name="scissors-cutting" size={28} color={COLORS.primary} />
+          <Text style={styles.boutiqueName}>{user?.boutique_name || 'BoutiqueFit'}</Text>
+        </View>
+        <Text style={styles.tagline}>Where Elegance Meets Perfection</Text>
 
         {/* Stats Section */}
+        <Text style={styles.sectionTitle}>Overview</Text>
         <View style={styles.statsGrid}>
           <StatCard 
             title="Customers" 
@@ -221,6 +224,7 @@ export default function DashboardScreen() {
             IconComponent={MaterialCommunityIcons}
             color={COLORS.accent}
             gradient={['#3B82F6', '#2563EB']}
+            onPress={() => router.push('/(tabs)/customers')}
           />
           <StatCard 
             title="Pending" 
@@ -229,6 +233,7 @@ export default function DashboardScreen() {
             IconComponent={MaterialCommunityIcons}
             color={COLORS.secondary}
             gradient={['#F97316', '#EA580C']}
+            onPress={() => router.push('/(tabs)/orders')}
           />
           <StatCard 
             title="Due Today" 
@@ -237,6 +242,7 @@ export default function DashboardScreen() {
             IconComponent={MaterialCommunityIcons}
             color={COLORS.primary}
             gradient={['#EF4444', '#DC2626']}
+            onPress={() => router.push('/(tabs)/orders')}
           />
           <StatCard 
             title="Due Soon" 
@@ -245,6 +251,7 @@ export default function DashboardScreen() {
             IconComponent={MaterialCommunityIcons}
             color={COLORS.gold}
             gradient={['#EAB308', '#CA8A04']}
+            onPress={() => router.push('/(tabs)/orders')}
           />
         </View>
 
@@ -265,6 +272,31 @@ export default function DashboardScreen() {
             gradient={['#C11F27', '#991B1B']}
             onPress={() => router.push('/add-order')}
           />
+        </View>
+        <View style={styles.quickActionsGrid}>
+          <QuickAction
+            title="Customers"
+            icon="users"
+            IconComponent={Feather}
+            gradient={['#3B82F6', '#2563EB']}
+            onPress={() => router.push('/(tabs)/customers')}
+          />
+          <QuickAction
+            title="Orders"
+            icon="package"
+            IconComponent={Feather}
+            gradient={['#F97316', '#EA580C']}
+            onPress={() => router.push('/(tabs)/orders')}
+          />
+        </View>
+        <View style={styles.quickActionsGrid}>
+          <QuickAction
+            title="Billing"
+            icon="credit-card"
+            IconComponent={Feather}
+            gradient={['#10B981', '#059669']}
+            onPress={() => router.push('/(tabs)/billing')}
+          />
           <QuickAction
             title="Search"
             icon="search"
@@ -273,39 +305,6 @@ export default function DashboardScreen() {
             onPress={() => router.push('/search')}
           />
         </View>
-
-        {/* Voice Mode Card */}
-        <LinearGradient
-          colors={['#FFFFFF', '#FFF9F0']}
-          style={styles.voiceCard}
-        >
-          <View style={styles.voiceHeader}>
-            <LinearGradient
-              colors={[COLORS.gold, '#D4A853']}
-              style={styles.voiceIconBg}
-            >
-              <MaterialCommunityIcons name="microphone" size={24} color={COLORS.white} />
-            </LinearGradient>
-            <View>
-              <Text style={styles.voiceTitle}>Voice Mode</Text>
-              <Text style={styles.voiceSubtitle}>Tap to speak commands</Text>
-            </View>
-          </View>
-          <View style={styles.voiceButtonContainer}>
-            <VoiceButton onTranscription={handleVoiceTranscription} />
-          </View>
-          <View style={styles.voiceHintContainer}>
-            <Text style={styles.voiceHint}>Try saying:</Text>
-            <View style={styles.voiceExamples}>
-              <View style={styles.voiceExample}>
-                <Text style={styles.voiceExampleText}>"Add customer"</Text>
-              </View>
-              <View style={styles.voiceExample}>
-                <Text style={styles.voiceExampleText}>"Search order"</Text>
-              </View>
-            </View>
-          </View>
-        </LinearGradient>
       </ScrollView>
     </SafeAreaView>
   );
