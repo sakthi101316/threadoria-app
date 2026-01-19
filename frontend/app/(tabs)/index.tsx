@@ -114,15 +114,16 @@ export default function DashboardScreen() {
     Alert.alert('Voice Command', `You said: "${text}"\n\nTry commands like:\n• "Add customer"\n• "Search orders"\n• "Go to billing"`);
   };
 
-  const StatCard = ({ title, value, icon, IconComponent, color, gradient }: { 
+  const StatCard = ({ title, value, icon, IconComponent, color, gradient, onPress }: { 
     title: string; 
     value: number; 
     icon: string; 
     IconComponent: any;
     color: string;
     gradient: string[];
+    onPress?: () => void;
   }) => (
-    <TouchableOpacity activeOpacity={0.9} style={styles.statCardWrapper}>
+    <TouchableOpacity activeOpacity={0.8} style={styles.statCardWrapper} onPress={onPress}>
       <LinearGradient
         colors={gradient}
         start={{ x: 0, y: 0 }}
@@ -130,7 +131,7 @@ export default function DashboardScreen() {
         style={styles.statCard}
       >
         <View style={styles.statIconContainer}>
-          <IconComponent name={icon} size={18} color={COLORS.white} />
+          <IconComponent name={icon} size={22} color={COLORS.white} />
         </View>
         <Text style={styles.statValue}>{value}</Text>
         <Text style={styles.statTitle}>{title}</Text>
@@ -152,7 +153,7 @@ export default function DashboardScreen() {
         end={{ x: 1, y: 1 }}
         style={styles.quickActionIcon}
       >
-        <IconComponent name={icon} size={22} color={COLORS.white} />
+        <IconComponent name={icon} size={24} color={COLORS.white} />
       </LinearGradient>
       <Text style={styles.quickActionText}>{title}</Text>
     </TouchableOpacity>
