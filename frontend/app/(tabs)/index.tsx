@@ -16,7 +16,6 @@ import { Ionicons, MaterialCommunityIcons, FontAwesome5, Feather } from '@expo/v
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, SPACING, BORDER_RADIUS, SHADOWS, APP_CONFIG } from '../../src/constants/theme';
 import { GlassCard } from '../../src/components/GlassCard';
-import { VoiceButton } from '../../src/components/VoiceButton';
 import { api } from '../../src/services/api';
 import { useAuth } from '../../src/context/AuthContext';
 
