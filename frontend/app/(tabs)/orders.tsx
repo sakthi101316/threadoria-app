@@ -240,6 +240,21 @@ const styles = StyleSheet.create({
     paddingRight: SPACING.md,
     gap: SPACING.sm,
   },
+  clearFilterButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: BORDER_RADIUS.full,
+    marginLeft: SPACING.md,
+    gap: 6,
+  },
+  clearFilterText: {
+    color: COLORS.white,
+    fontWeight: '600',
+    fontSize: 14,
+  },
   filterContainer: {
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
