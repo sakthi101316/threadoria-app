@@ -260,7 +260,7 @@ export default function BillingScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={['left', 'right']}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <LinearGradient
         colors={['#FDF6E9', '#FFF8F0', '#FDF6E9']}
         style={StyleSheet.absoluteFill}
