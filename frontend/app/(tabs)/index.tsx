@@ -139,21 +139,8 @@ export default function DashboardScreen() {
         <TouchableOpacity 
           style={styles.logoutButton}
           onPress={() => {
-            Alert.alert(
-              'Logout',
-              'Are you sure you want to logout?',
-              [
-                { text: 'Cancel', style: 'cancel' },
-                { 
-                  text: 'Logout', 
-                  style: 'destructive',
-                  onPress: () => {
-                    logout();
-                    router.replace('/');
-                  }
-                },
-              ]
-            );
+            logout();
+            router.replace('/');
           }}
         >
           <Feather name="log-out" size={16} color={COLORS.white} />
