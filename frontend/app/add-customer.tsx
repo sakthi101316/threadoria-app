@@ -22,8 +22,11 @@ import { GoldButton } from '../src/components/GoldButton';
 import { VoiceButton } from '../src/components/VoiceButton';
 import { api } from '../src/services/api';
 
+import { useAuth } from '../src/context/AuthContext';
+
 export default function AddCustomerScreen() {
   const router = useRouter();
+  const { user } = useAuth();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
