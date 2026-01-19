@@ -24,7 +24,7 @@ import { useAuth } from '../src/context/AuthContext';
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { signIn, isAuthenticated, isLoading } = useAuth();
+  const { login, isAuthenticated, isLoading } = useAuth();
   const [phone, setPhone] = useState('');
   const [pin, setPin] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
