@@ -179,7 +179,21 @@ export default function OrdersScreen() {
         style={StyleSheet.absoluteFill}
       />
       <View style={styles.header}>
-        <StatusFilter />
+        {selectedFilter && (
+          <TouchableOpacity 
+            style={styles.clearFilterButton}
+            onPress={() => {
+              setSelectedFilter(null);
+              router.setParams({ filter: '' });
+            }}
+          >
+            <Ionicons name="close-circle" size={20} color={COLORS.white} />
+            <Text style={styles.clearFilterText}>
+              {selectedFilter === 'today' ? 'Due Today' : selectedFilter === 'soon' ? 'Due Soon' : 'Pending'}
+            </Text>
+          </TouchableOpacity>
+        )}
+        {!selectedFilter && <StatusFilter />}
         <TouchableOpacity
           style={styles.addButton}
           onPress={() => router.push('/add-order')}
@@ -189,7 +203,7 @@ export default function OrdersScreen() {
       </View>
 
       <FlatList
-        data={orders}
+        data={filteredOrders}
         renderItem={renderOrder}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
