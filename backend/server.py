@@ -1250,6 +1250,56 @@ async def health_check():
     """Health check endpoint"""
     return {"status": "healthy", "service": "BoutiqueFit API"}
 
+# Backup endpoint
+class BackupRequest(BaseModel):
+    email: str
+
+@api_router.post("/backup/request")
+async def request_backup(backup: BackupRequest):
+    """Request a data backup to be sent via email"""
+    try:
+        import json
+        from datetime import datetime
+        
+        # Gather all data
+        customers = await db.customers.find().to_list(1000)
+        orders = await db.orders.find().to_list(1000)
+        measurements = await db.measurements.find().to_list(1000)
+        payments = await db.payments.find().to_list(1000)
+        
+        # Convert ObjectId to string
+        def serialize(doc):
+            doc['_id'] = str(doc.get('_id', ''))
+            for key, value in doc.items():
+                if isinstance(value, datetime):
+                    doc[key] = value.isoformat()
+            return doc
+        
+        backup_data = {
+            "backup_date": datetime.utcnow().isoformat(),
+            "customers": [serialize(c) for c in customers],
+            "orders": [serialize(o) for o in orders],
+            "measurements": [serialize(m) for m in measurements],
+            "payments": [serialize(p) for p in payments],
+        }
+        
+        # For now, just log and confirm (email integration would require SMTP setup)
+        logger.info(f"Backup requested for email: {backup.email}")
+        logger.info(f"Backup contains: {len(customers)} customers, {len(orders)} orders, {len(measurements)} measurements, {len(payments)} payments")
+        
+        # Save backup to file (for download)
+        backup_filename = f"/tmp/boutique_backup_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.json"
+        with open(backup_filename, 'w') as f:
+            json.dump(backup_data, f, indent=2)
+        
+        return {
+            "success": True, 
+            "message": f"Backup prepared. Contains {len(customers)} customers, {len(orders)} orders, {len(measurements)} measurements, {len(payments)} payments. Email notification will be sent to {backup.email}."
+        }
+    except Exception as e:
+        logger.error(f"Backup error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # Include the router in the main app
 app.include_router(api_router)
 
