@@ -28,19 +28,17 @@ export default function SettingsScreen() {
   const [backingUp, setBackingUp] = useState(false);
 
   const handleLogout = () => {
+    logout();
+    router.replace('/');
+  };
+
+  const confirmLogout = () => {
     Alert.alert(
       'Logout',
       'Are you sure you want to logout?',
       [
         { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: () => {
-            logout();
-            router.replace('/');
-          },
-        },
+        { text: 'Logout', style: 'destructive', onPress: handleLogout },
       ]
     );
   };
