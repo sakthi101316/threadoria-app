@@ -201,7 +201,7 @@ export default function DashboardScreen() {
             IconComponent={MaterialCommunityIcons}
             color={COLORS.secondary}
             gradient={['#F97316', '#EA580C']}
-            onPress={() => router.push('/(tabs)/orders')}
+            onPress={() => router.push({ pathname: '/(tabs)/orders', params: { filter: 'pending' } })}
           />
           <StatCard 
             title="Due Today" 
@@ -210,7 +210,7 @@ export default function DashboardScreen() {
             IconComponent={MaterialCommunityIcons}
             color={COLORS.primary}
             gradient={['#EF4444', '#DC2626']}
-            onPress={() => router.push('/(tabs)/orders')}
+            onPress={() => router.push({ pathname: '/(tabs)/orders', params: { filter: 'today' } })}
           />
           <StatCard 
             title="Due Soon" 
@@ -219,7 +219,7 @@ export default function DashboardScreen() {
             IconComponent={MaterialCommunityIcons}
             color={COLORS.gold}
             gradient={['#EAB308', '#CA8A04']}
-            onPress={() => router.push('/(tabs)/orders')}
+            onPress={() => router.push({ pathname: '/(tabs)/orders', params: { filter: 'soon' } })}
           />
         </View>
 
