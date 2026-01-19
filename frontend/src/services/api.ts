@@ -243,6 +243,14 @@ class ApiService {
   async getWhatsAppBalanceReminder(orderId: string) {
     return this.request<{ url: string; message: string }>(`/whatsapp/balance-reminder/${orderId}`);
   }
+
+  // Backup
+  async requestBackup(email: string) {
+    return this.request<{ success: boolean; message: string }>('/backup/request', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  }
 }
 
 export const api = new ApiService();
