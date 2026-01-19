@@ -1124,10 +1124,17 @@ async def get_whatsapp_delivery_reminder(order_id: str):
         
         customer = await db.customers.find_one({"_id": ObjectId(order['customer_id'])})
         
+        # Get boutique name from user
+        boutique_name = "Your Boutique"
+        if order.get('user_id'):
+            user = await db.users.find_one({"_id": ObjectId(order['user_id'])})
+            if user:
+                boutique_name = user.get('boutique_name', 'Your Boutique')
+        
         customer_name = customer.get('name', 'Customer') if customer else 'Customer'
         customer_phone = customer.get('phone', '') if customer else ''
         
-        message = f"""🌟 *BoutiqueFit* 🌟
+        message = f"""🌟 *{boutique_name}* 🌟
 ━━━━━━━━━━━━━━━━━━━
 *Delivery Reminder*
 
@@ -1138,9 +1145,7 @@ This is a friendly reminder that your {order.get('order_type', 'order')} is sche
 Please ensure availability for pickup/delivery.
 
 ━━━━━━━━━━━━━━━━━━━
-Thank you! ✨
-*BoutiqueFit*
-"Where Elegance Meets Perfection"
+Thank you for choosing *{boutique_name}*! ✨
 """
         
         import urllib.parse
