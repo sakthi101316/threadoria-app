@@ -1064,11 +1064,18 @@ async def get_whatsapp_order_confirmation(order_id: str):
         customer = await db.customers.find_one({"_id": ObjectId(order['customer_id'])})
         payment = await db.payments.find_one({"order_id": order_id})
         
+        # Get boutique name from user
+        boutique_name = "Your Boutique"
+        if order.get('user_id'):
+            user = await db.users.find_one({"_id": ObjectId(order['user_id'])})
+            if user:
+                boutique_name = user.get('boutique_name', 'Your Boutique')
+        
         customer_name = customer.get('name', 'Customer') if customer else 'Customer'
         customer_phone = customer.get('phone', '') if customer else ''
         
         # Format message
-        message = f"""🌟 *BoutiqueFit* 🌟
+        message = f"""🌟 *{boutique_name}* 🌟
 ━━━━━━━━━━━━━━━━━━━
 *Order Confirmation*
 
@@ -1087,10 +1094,9 @@ Advance Paid: ₹{payment.get('advance_paid', 0):.2f}
 Balance: ₹{payment.get('balance_amount', 0):.2f}
 """
         
-        message += """
+        message += f"""
 ━━━━━━━━━━━━━━━━━━━
-Thank you for choosing BoutiqueFit! ✨
-"Where Elegance Meets Perfection"
+Thank you for choosing *{boutique_name}*! ✨
 """
         
         # URL encode message
