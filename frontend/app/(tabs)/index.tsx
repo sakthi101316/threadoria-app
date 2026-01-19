@@ -159,13 +159,13 @@ export default function DashboardScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={['left', 'right']}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <LinearGradient
         colors={['#FDF6E9', '#FFF8F0', '#FDF6E9']}
         style={StyleSheet.absoluteFill}
       />
       
-      {/* Header with Back Button */}
+      {/* Header with Logout Button */}
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.logoutButton}
@@ -187,7 +187,7 @@ export default function DashboardScreen() {
             );
           }}
         >
-          <Feather name="log-out" size={18} color={COLORS.white} />
+          <Feather name="log-out" size={16} color={COLORS.white} />
           <Text style={styles.logoutText}>Logout</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>BoutiqueFit</Text>
