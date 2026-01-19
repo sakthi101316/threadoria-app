@@ -105,6 +105,7 @@ export default function AddCustomerScreen() {
         address: address.trim(),
         photo,
         notes: notes.trim(),
+        user_id: user?.user_id || null,
       });
       Alert.alert('Success', 'Customer added successfully', [
         { text: 'OK', onPress: () => router.back() },
