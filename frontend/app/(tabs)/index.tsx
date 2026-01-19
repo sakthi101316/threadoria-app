@@ -140,11 +140,14 @@ export default function DashboardScreen() {
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.logoutButton}
-          onPress={() => {
-            AsyncStorage.multiRemove(['auth_token', 'user_data']).then(() => {
-              logout();
+          onPress={async () => {
+            await AsyncStorage.multiRemove(['auth_token', 'user_data']);
+            await logout();
+            try {
+              await Updates.reloadAsync();
+            } catch (e) {
               router.replace('/');
-            });
+            }
           }}
         >
           <Feather name="log-out" size={16} color={COLORS.white} />
