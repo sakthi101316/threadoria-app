@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,9 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  TextInput,
+  Modal,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -15,10 +18,14 @@ import { COLORS, SPACING, BORDER_RADIUS, SHADOWS } from '../../src/constants/the
 import { GlassCard } from '../../src/components/GlassCard';
 import { GoldButton } from '../../src/components/GoldButton';
 import { useAuth } from '../../src/context/AuthContext';
+import { api } from '../../src/services/api';
 
 export default function SettingsScreen() {
   const router = useRouter();
   const { logout, user } = useAuth();
+  const [showBackupModal, setShowBackupModal] = useState(false);
+  const [backupEmail, setBackupEmail] = useState('');
+  const [backingUp, setBackingUp] = useState(false);
 
   const handleLogout = () => {
     Alert.alert(
@@ -29,13 +36,32 @@ export default function SettingsScreen() {
         {
           text: 'Logout',
           style: 'destructive',
-          onPress: async () => {
-            await logout();
+          onPress: () => {
+            logout();
             router.replace('/');
           },
         },
       ]
     );
+  };
+
+  const handleBackup = async () => {
+    if (!backupEmail || !backupEmail.includes('@')) {
+      Alert.alert('Error', 'Please enter a valid email address');
+      return;
+    }
+    
+    setBackingUp(true);
+    try {
+      await api.requestBackup(backupEmail);
+      Alert.alert('Success', `Backup will be sent to ${backupEmail}`, [
+        { text: 'OK', onPress: () => setShowBackupModal(false) }
+      ]);
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to create backup');
+    } finally {
+      setBackingUp(false);
+    }
   };
 
   const MenuItem = ({ icon, title, subtitle, onPress, danger }: {
@@ -71,7 +97,7 @@ export default function SettingsScreen() {
           <View style={styles.userAvatar}>
             <Ionicons name="person" size={40} color={COLORS.primary} />
           </View>
-          <Text style={styles.userName}>{user?.username || 'User'}</Text>
+          <Text style={styles.userName}>{user?.boutique_name || 'My Boutique'}</Text>
           <Text style={styles.userRole}>Administrator</Text>
         </GlassCard>
 
@@ -79,7 +105,18 @@ export default function SettingsScreen() {
         <GlassCard style={styles.section}>
           <Text style={styles.sectionTitle}>App Information</Text>
           <MenuItem icon="information-circle" title="Version" subtitle="1.0.0" />
-          <MenuItem icon="business" title="Boutique" subtitle="Your Boutique" />
+          <MenuItem icon="business" title="Boutique" subtitle={user?.boutique_name || 'My Boutique'} />
+        </GlassCard>
+
+        {/* Backup */}
+        <GlassCard style={styles.section}>
+          <Text style={styles.sectionTitle}>Data Management</Text>
+          <MenuItem
+            icon="cloud-download"
+            title="Backup Data"
+            subtitle="Send backup to email"
+            onPress={() => setShowBackupModal(true)}
+          />
         </GlassCard>
 
         {/* Actions */}
@@ -99,6 +136,44 @@ export default function SettingsScreen() {
           <Text style={styles.footerSubtext}>"Where Elegance Meets Perfection"</Text>
         </View>
       </ScrollView>
+
+      {/* Backup Modal */}
+      <Modal visible={showBackupModal} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Backup Data</Text>
+            <Text style={styles.modalSubtitle}>Enter email to receive backup</Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="your@email.com"
+              placeholderTextColor={COLORS.gray}
+              value={backupEmail}
+              onChangeText={setBackupEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+            <View style={styles.modalButtons}>
+              <TouchableOpacity 
+                style={styles.modalCancelButton}
+                onPress={() => setShowBackupModal(false)}
+              >
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.modalConfirmButton}
+                onPress={handleBackup}
+                disabled={backingUp}
+              >
+                {backingUp ? (
+                  <ActivityIndicator color={COLORS.white} />
+                ) : (
+                  <Text style={styles.modalConfirmText}>Send Backup</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
