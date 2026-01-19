@@ -8,7 +8,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, SPACING, BORDER_RADIUS, SHADOWS, ORDER_STATUSES } from '../../src/constants/theme';
@@ -16,7 +16,7 @@ import { GlassCard } from '../../src/components/GlassCard';
 import { StatusBadge } from '../../src/components/StatusBadge';
 import { GoldButton } from '../../src/components/GoldButton';
 import { api } from '../../src/services/api';
-import { format } from 'date-fns';
+import { format, isToday, isTomorrow, addDays, isBefore, isAfter, startOfDay, endOfDay } from 'date-fns';
 
 interface Order {
   id: string;
@@ -33,8 +33,13 @@ interface Order {
 
 export default function OrdersScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams();
+  const filterParam = params.filter as string | undefined;
+  
   const [orders, setOrders] = useState<Order[]>([]);
+  const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
+  const [selectedFilter, setSelectedFilter] = useState<string | null>(filterParam || null);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -42,6 +47,7 @@ export default function OrdersScreen() {
     try {
       const data = await api.getOrders({ status: status || undefined });
       setOrders(data);
+      applyDateFilter(data, selectedFilter);
     } catch (error) {
       console.error('Failed to fetch orders:', error);
     } finally {
@@ -49,9 +55,50 @@ export default function OrdersScreen() {
     }
   };
 
+  const applyDateFilter = (ordersList: Order[], filter: string | null) => {
+    if (!filter) {
+      setFilteredOrders(ordersList);
+      return;
+    }
+    
+    const today = new Date();
+    const todayStart = startOfDay(today);
+    const todayEnd = endOfDay(today);
+    const twoDaysLater = endOfDay(addDays(today, 2));
+    
+    let filtered = ordersList;
+    
+    if (filter === 'pending') {
+      filtered = ordersList.filter(o => o.status !== 'delivered');
+    } else if (filter === 'today') {
+      filtered = ordersList.filter(o => {
+        const deliveryDate = new Date(o.delivery_date);
+        return isToday(deliveryDate) && o.status !== 'delivered';
+      });
+    } else if (filter === 'soon') {
+      filtered = ordersList.filter(o => {
+        const deliveryDate = new Date(o.delivery_date);
+        return isAfter(deliveryDate, todayEnd) && isBefore(deliveryDate, twoDaysLater) && o.status !== 'delivered';
+      });
+    }
+    
+    setFilteredOrders(filtered);
+  };
+
+  useEffect(() => {
+    if (filterParam) {
+      setSelectedFilter(filterParam);
+      setSelectedStatus(null);
+    }
+  }, [filterParam]);
+
   useEffect(() => {
     fetchOrders(selectedStatus || undefined);
   }, [selectedStatus]);
+
+  useEffect(() => {
+    applyDateFilter(orders, selectedFilter);
+  }, [selectedFilter, orders]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
