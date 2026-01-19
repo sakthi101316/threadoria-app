@@ -456,7 +456,8 @@ export default function AddMeasurementScreen() {
 
         <ScrollView 
           contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
+          keyboardShouldPersistTaps="always"
+          keyboardDismissMode="none"
         >
           {/* Category Toggle */}
           <View style={styles.categoryToggle}>
