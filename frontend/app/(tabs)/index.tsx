@@ -168,20 +168,34 @@ export default function DashboardScreen() {
       {/* Header with Back Button */}
       <View style={styles.header}>
         <TouchableOpacity 
-          style={styles.headerButton}
-          onPress={async () => {
-            await logout();
-            router.replace('/');
+          style={styles.logoutButton}
+          onPress={() => {
+            Alert.alert(
+              'Logout',
+              'Are you sure you want to logout?',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                { 
+                  text: 'Logout', 
+                  style: 'destructive',
+                  onPress: async () => {
+                    await logout();
+                    router.replace('/');
+                  }
+                },
+              ]
+            );
           }}
         >
-          <Feather name="log-out" size={22} color={COLORS.error} />
+          <Feather name="log-out" size={18} color={COLORS.white} />
+          <Text style={styles.logoutText}>Logout</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>BoutiqueFit</Text>
         <TouchableOpacity 
           style={styles.headerButton}
           onPress={() => router.push('/search')}
         >
-          <Feather name="search" size={22} color={COLORS.gray} />
+          <Feather name="search" size={20} color={COLORS.gray} />
         </TouchableOpacity>
       </View>
 
@@ -192,25 +206,9 @@ export default function DashboardScreen() {
         }
         showsVerticalScrollIndicator={false}
       >
-        {/* Circular Logo Section - BoutiqueFit Branding */}
-        <View style={styles.logoSection}>
-          <View style={styles.logoOuterRing}>
-            <View style={styles.logoMiddleRing}>
-              <LinearGradient
-                colors={['#FFFFFF', '#FFF5E6']}
-                style={styles.logoCircle}
-              >
-                <MaterialCommunityIcons name="scissors-cutting" size={32} color={COLORS.primary} />
-              </LinearGradient>
-            </View>
-          </View>
-        </View>
-
-        {/* App Name and Tagline */}
-        <Text style={styles.appNameText}>{APP_CONFIG.name}</Text>
-        <Text style={styles.tagline}>{APP_CONFIG.tagline}</Text>
+        {/* Welcome Text with Boutique Name */}
         {user?.boutique_name && (
-          <Text style={styles.boutiqueNameText}>{user.boutique_name}</Text>
+          <Text style={styles.welcomeText}>Welcome, {user.boutique_name}</Text>
         )}
 
         {/* Stats Section */}
