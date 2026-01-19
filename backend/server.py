@@ -389,6 +389,7 @@ async def create_customer(customer: CustomerCreate):
         "address": customer.address or "",
         "photo": customer.photo or "",
         "notes": customer.notes or "",
+        "user_id": customer.user_id,
         "created_at": datetime.utcnow()
     }
     result = await db.customers.insert_one(customer_doc)
