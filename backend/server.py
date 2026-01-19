@@ -1021,6 +1021,11 @@ async def transcribe_voice(request: VoiceTranscriptionRequest):
         audio_data = base64.b64decode(request.audio_base64)
         logger.info(f"Received audio data: {len(audio_data)} bytes, format: {request.format}")
         
+        # Check minimum audio size to avoid hallucinations
+        if len(audio_data) < 5000:
+            logger.info("Audio too short, skipping transcription")
+            return VoiceTranscriptionResponse(text="", success=True)
+        
         # Save temporarily
         temp_path = f"/tmp/audio_{uuid.uuid4()}.{request.format}"
         with open(temp_path, 'wb') as f:
@@ -1032,16 +1037,39 @@ async def transcribe_voice(request: VoiceTranscriptionRequest):
         with open(temp_path, 'rb') as audio_file:
             transcription = client.audio.transcriptions.create(
                 model="whisper-1",
-                file=audio_file
+                file=audio_file,
+                language="en",
+                prompt="Transcribe measurements like: full length 42, shoulder 14, bust 36, waist 32, front deep 8, back deep 10. Numbers and measurement terms only."
             )
         
         # Clean up
         os.remove(temp_path)
         
-        logger.info(f"Transcription result: '{transcription.text}'")
+        # Filter out known hallucination phrases
+        result_text = transcription.text
+        hallucination_phrases = [
+            "thank you for watching",
+            "subscribe",
+            "like and share",
+            "comment",
+            "beadaholique",
+            "don't forget",
+            "channel",
+            "video",
+            "watching"
+        ]
+        
+        lower_text = result_text.lower()
+        for phrase in hallucination_phrases:
+            if phrase in lower_text:
+                logger.info(f"Filtered hallucination: '{result_text}'")
+                result_text = ""
+                break
+        
+        logger.info(f"Transcription result: '{result_text}'")
         
         return VoiceTranscriptionResponse(
-            text=transcription.text,
+            text=result_text,
             success=True
         )
     except Exception as e:
