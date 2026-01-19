@@ -400,16 +400,16 @@ async def create_customer(customer: CustomerCreate):
     return CustomerResponse(**customer_doc)
 
 @api_router.get("/customers", response_model=List[CustomerResponse])
-async def get_customers(search: Optional[str] = None):
-    """Get all customers or search by name/phone"""
+async def get_customers(search: Optional[str] = None, user_id: Optional[str] = None):
+    """Get all customers or search by name/phone, filtered by user_id"""
     query = {}
+    if user_id:
+        query["user_id"] = user_id
     if search:
-        query = {
-            "$or": [
-                {"name": {"$regex": search, "$options": "i"}},
-                {"phone": {"$regex": search, "$options": "i"}}
-            ]
-        }
+        query["$or"] = [
+            {"name": {"$regex": search, "$options": "i"}},
+            {"phone": {"$regex": search, "$options": "i"}}
+        ]
     customers = await db.customers.find(query).sort("created_at", -1).to_list(1000)
     return [CustomerResponse(**serialize_doc(c)) for c in customers]
 
