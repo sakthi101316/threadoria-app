@@ -539,10 +539,12 @@ async def delete_measurement(measurement_id: str):
 async def create_order(order: OrderCreate):
     """Create a new order"""
     # Get customer info
+    user_id = None
     try:
         customer = await db.customers.find_one({"_id": ObjectId(order.customer_id)})
         customer_name = customer.get("name", "") if customer else ""
         customer_phone = customer.get("phone", "") if customer else ""
+        user_id = customer.get("user_id") if customer else None
     except:
         customer_name = ""
         customer_phone = ""
@@ -551,6 +553,7 @@ async def create_order(order: OrderCreate):
         "customer_id": order.customer_id,
         "customer_name": customer_name,
         "customer_phone": customer_phone,
+        "user_id": user_id,
         "measurement_id": order.measurement_id,
         "order_type": order.order_type,
         "description": order.description or "",
