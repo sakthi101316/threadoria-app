@@ -1172,11 +1172,18 @@ async def get_whatsapp_balance_reminder(order_id: str):
         customer = await db.customers.find_one({"_id": ObjectId(order['customer_id'])})
         payment = await db.payments.find_one({"order_id": order_id})
         
+        # Get boutique name from user
+        boutique_name = "Your Boutique"
+        if order.get('user_id'):
+            user = await db.users.find_one({"_id": ObjectId(order['user_id'])})
+            if user:
+                boutique_name = user.get('boutique_name', 'Your Boutique')
+        
         customer_name = customer.get('name', 'Customer') if customer else 'Customer'
         customer_phone = customer.get('phone', '') if customer else ''
         balance = payment.get('balance_amount', 0) if payment else 0
         
-        message = f"""🌟 *BoutiqueFit* 🌟
+        message = f"""🌟 *{boutique_name}* 🌟
 ━━━━━━━━━━━━━━━━━━━
 *Payment Reminder*
 
@@ -1187,9 +1194,7 @@ This is a gentle reminder regarding your pending balance of *₹{balance:.2f}* f
 Kindly clear the balance at your earliest convenience.
 
 ━━━━━━━━━━━━━━━━━━━
-Thank you! ✨
-*BoutiqueFit*
-"Where Elegance Meets Perfection"
+Thank you for choosing *{boutique_name}*! ✨
 """
         
         import urllib.parse
