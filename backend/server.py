@@ -64,6 +64,7 @@ class CustomerCreate(BaseModel):
     address: Optional[str] = ""
     photo: Optional[str] = ""  # Base64 image
     notes: Optional[str] = ""
+    user_id: Optional[str] = None
 
 class CustomerUpdate(BaseModel):
     name: Optional[str] = None
