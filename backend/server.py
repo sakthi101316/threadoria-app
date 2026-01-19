@@ -886,11 +886,18 @@ async def get_whatsapp_payment_received(order_id: str, amount: float = 0):
         customer = await db.customers.find_one({"_id": ObjectId(order['customer_id'])})
         payment = await db.payments.find_one({"order_id": order_id})
         
+        # Get boutique name from user
+        boutique_name = "Your Boutique"
+        if order.get('user_id'):
+            user = await db.users.find_one({"_id": ObjectId(order['user_id'])})
+            if user:
+                boutique_name = user.get('boutique_name', 'Your Boutique')
+        
         customer_name = customer.get('name', 'Customer') if customer else 'Customer'
         customer_phone = customer.get('phone', '') if customer else ''
         balance = payment.get('balance_amount', 0) if payment else 0
         
-        message = f"""🌟 *BoutiqueFit* 🌟
+        message = f"""🌟 *{boutique_name}* 🌟
 ━━━━━━━━━━━━━━━━━━━
 *Payment Received - Thank You!* 💰
 
@@ -901,9 +908,7 @@ We have received your payment of *₹{amount:.2f}* for your {order.get('order_ty
 {'✅ *Payment Complete!* Your order is fully paid.' if balance <= 0 else f'📋 *Remaining Balance:* ₹{balance:.2f}'}
 
 ━━━━━━━━━━━━━━━━━━━
-Thank you for your payment! ✨
-*BoutiqueFit*
-"Where Elegance Meets Perfection"
+Thank you for choosing *{boutique_name}*! ✨
 """
         
         import urllib.parse
