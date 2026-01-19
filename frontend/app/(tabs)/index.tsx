@@ -139,7 +139,10 @@ export default function DashboardScreen() {
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.logoutButton}
-          onPress={() => logout()}
+          onPress={async () => {
+            await logout();
+            router.replace('/');
+          }}
         >
           <Feather name="log-out" size={16} color={COLORS.white} />
           <Text style={styles.logoutText}>Logout</Text>
