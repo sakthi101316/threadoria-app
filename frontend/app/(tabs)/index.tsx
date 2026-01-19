@@ -80,38 +80,7 @@ export default function DashboardScreen() {
     setRefreshing(false);
   }, []);
 
-  const handleVoiceTranscription = (text: string) => {
-    const lowerText = text.toLowerCase();
-    
-    // Handle voice commands
-    if (lowerText.includes('add customer') || lowerText.includes('new customer')) {
-      router.push('/add-customer');
-      return;
-    }
-    if (lowerText.includes('add order') || lowerText.includes('new order')) {
-      router.push('/add-order');
-      return;
-    }
-    if (lowerText.includes('search') || lowerText.includes('find')) {
-      router.push({ pathname: '/search', params: { query: text } });
-      return;
-    }
-    if (lowerText.includes('customer')) {
-      router.push('/(tabs)/customers');
-      return;
-    }
-    if (lowerText.includes('order')) {
-      router.push('/(tabs)/orders');
-      return;
-    }
-    if (lowerText.includes('billing') || lowerText.includes('payment')) {
-      router.push('/(tabs)/billing');
-      return;
-    }
-    
-    // Default: go to search
-    Alert.alert('Voice Command', `You said: "${text}"\n\nTry commands like:\n• "Add customer"\n• "Search orders"\n• "Go to billing"`);
-  };
+ 
 
   const StatCard = ({ title, value, icon, IconComponent, color, gradient, onPress }: { 
     title: string; 
