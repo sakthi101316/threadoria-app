@@ -195,11 +195,11 @@ backend:
 frontend:
   - task: "Logout functionality and redirect"
     implemented: true
-    working: "NA"
+    working: false
     file: "_layout.tsx"
     stuck_count: 3
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: false
         agent: "user"
@@ -207,6 +207,9 @@ frontend:
       - working: "NA"
         agent: "main"
         comment: "Implemented auth-based navigation in _layout.tsx with useEffect hook that monitors isAuthenticated state. Logout now triggers state change which should redirect to login."
+      - working: false
+        agent: "testing"
+        comment: "CRITICAL BUG CONFIRMED: Comprehensive testing shows logout button is visible and clickable, but after clicking logout, user remains on dashboard instead of being redirected to login page. The logout() function in AuthContext clears auth state but the navigation logic in _layout.tsx is not working properly. This is a critical user experience issue that prevents users from properly logging out."
 
   - task: "Data isolation - pass user_id to API calls"
     implemented: true
