@@ -770,8 +770,8 @@ class PaymentRecord(BaseModel):
     last_updated: datetime
 
 @api_router.get("/payments/analytics")
-async def get_payment_analytics(period: str = "all"):
-    """Get payment analytics - period can be 'today', 'week', 'month', 'all'"""
+async def get_payment_analytics(period: str = "all", user_id: Optional[str] = None):
+    """Get payment analytics - period can be 'today', 'week', 'month', 'all', filtered by user_id"""
     from datetime import timedelta
     
     # Define date range based on period
@@ -788,8 +788,18 @@ async def get_payment_analytics(period: str = "all"):
         month_ago = today - timedelta(days=30)
         date_filter = {"last_updated": {"$gte": month_ago}}
     
-    # Get all payments
-    payments = await db.payments.find(date_filter).sort("last_updated", -1).to_list(1000)
+    # Get all payments - we need to filter by user_id through orders
+    all_payments = await db.payments.find(date_filter).sort("last_updated", -1).to_list(1000)
+    
+    # Filter payments by user_id if provided
+    payments = []
+    for p in all_payments:
+        if user_id and p.get('order_id'):
+            order = await db.orders.find_one({"_id": ObjectId(p['order_id'])})
+            if order and order.get('user_id') == user_id:
+                payments.append(p)
+        elif not user_id:
+            payments.append(p)
     
     # Calculate totals
     total_revenue = sum(p.get('final_amount', 0) for p in payments)
