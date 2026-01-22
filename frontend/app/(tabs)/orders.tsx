@@ -36,6 +36,7 @@ export default function OrdersScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const filterParam = params.filter as string | undefined;
+  const { user } = useAuth();
   
   const [orders, setOrders] = useState<Order[]>([]);
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
@@ -46,7 +47,7 @@ export default function OrdersScreen() {
 
   const fetchOrders = async (status?: string) => {
     try {
-      const data = await api.getOrders({ status: status || undefined });
+      const data = await api.getOrders({ status: status || undefined, user_id: user?.user_id });
       setOrders(data);
       applyDateFilter(data, selectedFilter);
     } catch (error) {
