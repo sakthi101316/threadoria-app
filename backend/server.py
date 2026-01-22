@@ -935,31 +935,42 @@ Thank you for choosing *{boutique_name}*! ✨
 # ========================== DASHBOARD ROUTES ==========================
 
 @api_router.get("/dashboard/stats", response_model=DashboardStats)
-async def get_dashboard_stats():
-    """Get dashboard statistics"""
+async def get_dashboard_stats(user_id: Optional[str] = None):
+    """Get dashboard statistics filtered by user_id"""
     from datetime import timedelta
     
-    total_customers = await db.customers.count_documents({})
+    # Build query with user_id filter
+    customer_query = {}
+    order_query = {}
     
-    # Pending orders (not delivered)
-    pending_orders = await db.orders.count_documents({
-        "status": {"$nin": ["delivered", "completed"]}
-    })
+    if user_id:
+        customer_query["user_id"] = user_id
+        order_query["user_id"] = user_id
+    
+    total_customers = await db.customers.count_documents(customer_query)
+    
+    # Pending orders (not delivered) for this user
+    pending_query = {**order_query, "status": {"$nin": ["delivered", "completed"]}}
+    pending_orders = await db.orders.count_documents(pending_query)
     
     # Delivery due today
     today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
     tomorrow = today + timedelta(days=1)
-    delivery_today = await db.orders.count_documents({
+    today_query = {
+        **order_query,
         "delivery_date": {"$gte": today, "$lt": tomorrow},
         "status": {"$ne": "delivered"}
-    })
+    }
+    delivery_today = await db.orders.count_documents(today_query)
     
     # Delivery in next 2 days
     day_after_tomorrow = today + timedelta(days=3)
-    delivery_in_2_days = await db.orders.count_documents({
+    soon_query = {
+        **order_query,
         "delivery_date": {"$gte": tomorrow, "$lt": day_after_tomorrow},
         "status": {"$ne": "delivered"}
-    })
+    }
+    delivery_in_2_days = await db.orders.count_documents(soon_query)
     
     return DashboardStats(
         total_customers=total_customers,
