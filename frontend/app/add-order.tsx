@@ -192,6 +192,7 @@ export default function AddOrderScreen() {
         }
       }
 
+      console.log('Creating order...');
       const order = await api.createOrder({
         customer_id: selectedCustomer.id,
         measurement_id: measurementId,
@@ -203,6 +204,7 @@ export default function AddOrderScreen() {
         voice_instructions: voiceInstructions.trim(),
         auto_created_by_voice: false,
       });
+      console.log('Order created:', order);
 
       // Create payment if amounts provided
       if (finalAmount) {
@@ -213,7 +215,8 @@ export default function AddOrderScreen() {
         });
       }
 
-      Alert.alert('Success', 'Order created successfully', [
+      console.log('Order created successfully!');
+      Alert.alert('Success', 'Order created successfully!', [
         { text: 'OK', onPress: () => router.back() },
       ]);
     } catch (error: any) {
