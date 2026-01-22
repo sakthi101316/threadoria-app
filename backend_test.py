@@ -47,7 +47,17 @@ class BoutiqueFitTester:
             self.log(f"OTP request failed for User A: {otp_response_a.text}", "ERROR")
             return False
             
-        # In demo mode, any 6-digit OTP should work
+        # Extract OTP from response message if in demo mode
+        otp_data_a = otp_response_a.json()
+        otp_a = "123456"  # Default
+        if "Demo: use" in otp_data_a.get("message", ""):
+            # Extract OTP from message like "OTP sent to +919876543210. (Demo: use 872602)"
+            import re
+            match = re.search(r'Demo: use (\d{6})', otp_data_a.get("message", ""))
+            if match:
+                otp_a = match.group(1)
+                self.log(f"Extracted OTP for User A: {otp_a}")
+            
         self.log("Registering User A...")
         register_response_a = self.session.post(f"{BASE_URL}/auth/register", json={
             "boutique_name": "Boutique A",
@@ -55,7 +65,7 @@ class BoutiqueFitTester:
             "email": f"ownera{timestamp}@boutique.com",
             "phone": phone_a,
             "pin": "123456",
-            "otp": "123456"  # Demo OTP - should work in demo mode
+            "otp": otp_a
         })
         
         if register_response_a.status_code != 200:
@@ -78,6 +88,17 @@ class BoutiqueFitTester:
             self.log(f"OTP request failed for User B: {otp_response_b.text}", "ERROR")
             return False
             
+        # Extract OTP from response message if in demo mode
+        otp_data_b = otp_response_b.json()
+        otp_b = "123456"  # Default
+        if "Demo: use" in otp_data_b.get("message", ""):
+            # Extract OTP from message like "OTP sent to +919876543210. (Demo: use 872602)"
+            import re
+            match = re.search(r'Demo: use (\d{6})', otp_data_b.get("message", ""))
+            if match:
+                otp_b = match.group(1)
+                self.log(f"Extracted OTP for User B: {otp_b}")
+            
         self.log("Registering User B...")
         register_response_b = self.session.post(f"{BASE_URL}/auth/register", json={
             "boutique_name": "Boutique B",
@@ -85,7 +106,7 @@ class BoutiqueFitTester:
             "email": f"ownerb{timestamp}@boutique.com", 
             "phone": phone_b,
             "pin": "123456",
-            "otp": "123456"  # Demo OTP - should work in demo mode
+            "otp": otp_b
         })
         
         if register_response_b.status_code != 200:
