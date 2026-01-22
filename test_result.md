@@ -210,6 +210,9 @@ frontend:
       - working: false
         agent: "testing"
         comment: "CRITICAL BUG CONFIRMED: Comprehensive testing shows logout button is visible and clickable, but after clicking logout, user remains on dashboard instead of being redirected to login page. The logout() function in AuthContext clears auth state but the navigation logic in _layout.tsx is not working properly. This is a critical user experience issue that prevents users from properly logging out."
+      - working: false
+        agent: "testing"
+        comment: "RE-CONFIRMED CRITICAL LOGOUT BUG: Detailed mobile testing (390x844) shows: ✅ Login works perfectly (mobile: 9876543210, PIN: 123456), ✅ Dashboard loads with 'Test Boutique' and stat cards, ✅ Red logout button visible and clickable at top-left, ❌ CRITICAL: After logout click, user remains on dashboard showing 'Test Boutique' instead of redirecting to login page. URL shows '/' but content is still dashboard. The logout() function clears AsyncStorage and sets isAuthenticated=false, but the useEffect navigation logic in _layout.tsx fails to redirect properly. This is a critical security/UX issue requiring immediate fix."
 
   - task: "Data isolation - pass user_id to API calls"
     implemented: true
