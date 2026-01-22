@@ -316,3 +316,29 @@ agent_communication:
       • This is a critical security vulnerability - users cannot properly log out
       
       🚨 RECOMMENDATION: This task has stuck_count=3 and needs immediate attention. The navigation logic in _layout.tsx requires debugging or complete rewrite.
+  - agent: "testing"
+    message: |
+      🔍 BREAKTHROUGH DISCOVERY - NEW REDIRECT APPROACH WORKS BUT CAUSES CRITICAL REACT ERROR!
+      
+      📱 COMPREHENSIVE LOGOUT TEST RESULTS (390x844 viewport):
+      • ✅ Login works perfectly (mobile: 9876543210, PIN: 123456)
+      • ✅ Dashboard loads correctly showing "Test Boutique" and all stat cards
+      • ✅ Red logout button visible and clickable at TOP LEFT of header
+      • ✅ **MAJOR PROGRESS**: User IS successfully redirected to login page after logout!
+      • ✅ Login page displays correctly with "Welcome Back", mobile input, PIN input, and login button
+      • ❌ **CRITICAL ISSUE**: The new <Redirect href="/" /> approach causes "Maximum update depth exceeded" React error
+      
+      🚨 ROOT CAUSE IDENTIFIED:
+      • The logout() function works correctly (clears AsyncStorage, sets isAuthenticated=false)
+      • The tabs layout correctly detects !isAuthenticated and renders <Redirect href="/" />
+      • The redirect DOES work - user reaches login page successfully
+      • However, this triggers an infinite loop in React's navigation state management
+      • Error occurs in expo-router navigation system, not in auth logic
+      
+      📋 TECHNICAL ANALYSIS:
+      • Error: "Maximum update depth exceeded" in React navigation components
+      • Stack trace shows expo-router navigation state conflict
+      • The Redirect component works but creates app instability
+      • This is a React/expo-router architectural issue, not an auth implementation issue
+      
+      🎯 SOLUTION NEEDED: Replace <Redirect /> with a different navigation approach that doesn't cause React infinite loops. The auth logic is correct, but the navigation method needs to be changed.
