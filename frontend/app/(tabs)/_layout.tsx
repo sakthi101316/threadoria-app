@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Tabs, useRouter } from 'expo-router';
 import { MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import { COLORS } from '../../src/constants/theme';
@@ -8,17 +8,19 @@ import { View, ActivityIndicator } from 'react-native';
 export default function TabsLayout() {
   const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
+  const hasRedirected = useRef(false);
 
-  // Redirect unauthenticated users to login - using useEffect with router
+  // Redirect unauthenticated users to login - only once
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      // Use setTimeout to ensure navigation happens after render cycle
-      const timeout = setTimeout(() => {
-        router.replace('/');
-      }, 0);
-      return () => clearTimeout(timeout);
+    if (!isLoading && !isAuthenticated && !hasRedirected.current) {
+      hasRedirected.current = true;
+      router.replace('/');
     }
-  }, [isAuthenticated, isLoading, router]);
+    // Reset the flag when user becomes authenticated again
+    if (isAuthenticated) {
+      hasRedirected.current = false;
+    }
+  }, [isAuthenticated, isLoading]);
 
   // Show loading screen while checking auth
   if (isLoading) {
