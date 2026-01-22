@@ -30,6 +30,7 @@ interface SearchResult {
 export default function SearchScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
+  const { user } = useAuth();
   const [query, setQuery] = useState((params.query as string) || '');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -45,7 +46,7 @@ export default function SearchScreen() {
   const searchDebounced = async (searchQuery: string) => {
     setLoading(true);
     try {
-      const data = await api.globalSearch(searchQuery);
+      const data = await api.globalSearch(searchQuery, user?.user_id);
       setResults(data);
     } catch (error) {
       console.error('Search error:', error);
