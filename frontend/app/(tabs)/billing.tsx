@@ -25,6 +25,7 @@ import { COLORS, SPACING, BORDER_RADIUS, SHADOWS } from '../../src/constants/the
 import { GlassCard } from '../../src/components/GlassCard';
 import { GoldButton } from '../../src/components/GoldButton';
 import { api } from '../../src/services/api';
+import { useAuth } from '../../src/context/AuthContext';
 import { format } from 'date-fns';
 
 const QR_CODE_URL = 'https://customer-assets.emergentagent.com/job_fashion-tracker-10/artifacts/qo2oodvg_WhatsApp%20Image%202026-01-11%20at%201.04.36%20PM.jpeg';
