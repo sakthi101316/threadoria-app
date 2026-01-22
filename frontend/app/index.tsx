@@ -63,9 +63,19 @@ export default function LoginScreen() {
   }, []);
 
   useEffect(() => {
-    if (!isLoading && isAuthenticated && !showSplash) {
-      router.replace('/(tabs)');
-    }
+    // Only redirect to tabs if authenticated AND user explicitly came to login page while logged in
+    // Don't redirect if we just logged out (token will be null in AsyncStorage)
+    const checkShouldRedirect = async () => {
+      if (!isLoading && isAuthenticated && !showSplash) {
+        // Double check AsyncStorage to prevent redirect after logout
+        const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
+        const token = await AsyncStorage.getItem('auth_token');
+        if (token) {
+          router.replace('/(tabs)');
+        }
+      }
+    };
+    checkShouldRedirect();
   }, [isAuthenticated, isLoading, showSplash]);
 
   const playWelcomeAudio = async () => {
