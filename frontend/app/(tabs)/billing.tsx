@@ -55,6 +55,7 @@ interface PaymentRecord {
 
 export default function BillingScreen() {
   const router = useRouter();
+  const { user } = useAuth();
   const [analytics, setAnalytics] = useState<PaymentAnalytics | null>(null);
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
   const [selectedPeriod, setSelectedPeriod] = useState<string>('all');
@@ -82,7 +83,7 @@ export default function BillingScreen() {
 
   const fetchData = async () => {
     try {
-      const analyticsData = await api.getPaymentAnalytics(selectedPeriod);
+      const analyticsData = await api.getPaymentAnalytics(selectedPeriod, user?.user_id);
       setAnalytics(analyticsData);
       
       let paymentsData = analyticsData.payments;
