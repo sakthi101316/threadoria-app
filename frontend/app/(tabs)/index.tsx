@@ -140,9 +140,11 @@ export default function DashboardScreen() {
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.logoutButton}
-          onPress={() => {
-            // Just call logout - the root layout will automatically show login screen
-            logout();
+          onPress={async () => {
+            // Clear storage and reload app
+            await AsyncStorage.multiRemove(['auth_token', 'user_data']);
+            const url = Linking.createURL('/');
+            Linking.openURL(url);
           }}
         >
           <Feather name="log-out" size={16} color={COLORS.white} />
