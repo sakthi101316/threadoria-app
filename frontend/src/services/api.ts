@@ -123,11 +123,12 @@ class ApiService {
   }
 
   // Orders
-  async getOrders(params?: { status?: string; customer_id?: string; search?: string }) {
+  async getOrders(params?: { status?: string; customer_id?: string; search?: string; user_id?: string }) {
     const query = new URLSearchParams();
     if (params?.status) query.append('status', params.status);
     if (params?.customer_id) query.append('customer_id', params.customer_id);
     if (params?.search) query.append('search', params.search);
+    if (params?.user_id) query.append('user_id', params.user_id);
     const queryStr = query.toString() ? `?${query.toString()}` : '';
     return this.request<any[]>(`/orders${queryStr}`);
   }
