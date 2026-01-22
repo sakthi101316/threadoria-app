@@ -30,23 +30,30 @@ class BoutiqueFitTester:
         """Test user registration for two different users"""
         self.log("Testing user registration...")
         
+        # Use unique phone numbers with timestamp to avoid conflicts
+        import time
+        timestamp = str(int(time.time()))[-4:]  # Last 4 digits of timestamp
+        phone_a = f"987654{timestamp}0"
+        phone_b = f"987654{timestamp}1"
+        
         # Test User A Registration
-        self.log("Sending OTP for User A...")
+        self.log(f"Sending OTP for User A ({phone_a})...")
         otp_response_a = self.session.post(f"{BASE_URL}/auth/send-otp", 
-            json={"phone": "9876543210"})
+            json={"phone": phone_a})
         
         if otp_response_a.status_code != 200:
             self.log(f"OTP request failed for User A: {otp_response_a.text}", "ERROR")
             return False
             
+        # In demo mode, any 6-digit OTP should work
         self.log("Registering User A...")
         register_response_a = self.session.post(f"{BASE_URL}/auth/register", json={
             "boutique_name": "Boutique A",
             "owner_name": "Owner A", 
-            "email": "ownera@boutique.com",
-            "phone": "9876543210",
+            "email": f"ownera{timestamp}@boutique.com",
+            "phone": phone_a,
             "pin": "123456",
-            "otp": "123456"  # Demo OTP
+            "otp": "123456"  # Demo OTP - should work in demo mode
         })
         
         if register_response_a.status_code != 200:
@@ -61,9 +68,9 @@ class BoutiqueFitTester:
         self.log(f"User A registered successfully: {user_a_data.get('user_id')}")
         
         # Test User B Registration
-        self.log("Sending OTP for User B...")
+        self.log(f"Sending OTP for User B ({phone_b})...")
         otp_response_b = self.session.post(f"{BASE_URL}/auth/send-otp", 
-            json={"phone": "9876543211"})
+            json={"phone": phone_b})
         
         if otp_response_b.status_code != 200:
             self.log(f"OTP request failed for User B: {otp_response_b.text}", "ERROR")
@@ -73,10 +80,10 @@ class BoutiqueFitTester:
         register_response_b = self.session.post(f"{BASE_URL}/auth/register", json={
             "boutique_name": "Boutique B",
             "owner_name": "Owner B",
-            "email": "ownerb@boutique.com", 
-            "phone": "9876543211",
+            "email": f"ownerb{timestamp}@boutique.com", 
+            "phone": phone_b,
             "pin": "123456",
-            "otp": "123456"  # Demo OTP
+            "otp": "123456"  # Demo OTP - should work in demo mode
         })
         
         if register_response_b.status_code != 200:
@@ -89,6 +96,10 @@ class BoutiqueFitTester:
             return False
             
         self.log(f"User B registered successfully: {user_b_data.get('user_id')}")
+        
+        # Store phone numbers for login
+        self.phone_a = phone_a
+        self.phone_b = phone_b
         return True
         
     def test_login(self):
