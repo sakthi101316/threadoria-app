@@ -141,10 +141,15 @@ export default function DashboardScreen() {
         <TouchableOpacity 
           style={styles.logoutButton}
           onPress={async () => {
-            // Clear auth and navigate directly
+            // Clear auth first
             await logout();
-            // Direct navigation - this is the simplest approach
-            router.replace('/');
+            // Use CommonActions.reset to completely reset navigation to login screen
+            navigation.dispatch(
+              CommonActions.reset({
+                index: 0,
+                routes: [{ name: 'index' }],
+              })
+            );
           }}
         >
           <Feather name="log-out" size={16} color={COLORS.white} />
