@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View, ActivityIndicator } from 'react-native';
@@ -10,27 +10,37 @@ function RootLayoutNav() {
   const { isAuthenticated, isLoading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
+  const previousAuthState = useRef<boolean | null>(null);
 
   useEffect(() => {
-    if (isLoading) return; // Wait for auth check to complete
+    if (isLoading) return;
 
-    const inAuthGroup = segments[0] === '(tabs)';
-    const isProtectedRoute = inAuthGroup || segments[0]?.startsWith('customer') || 
-                             segments[0]?.startsWith('order') || segments[0]?.startsWith('add-') ||
-                             segments[0]?.startsWith('edit-') || segments[0] === 'search';
-
-    if (!isAuthenticated && isProtectedRoute) {
-      // User is not authenticated but trying to access protected route
+    // LOGOUT DETECTION: If user was authenticated and now is not -> redirect to login
+    if (previousAuthState.current === true && isAuthenticated === false) {
+      console.log('LOGOUT DETECTED - Redirecting to login');
       router.replace('/');
-    } else if (isAuthenticated && !inAuthGroup && segments[0] !== 'customer' && 
-               segments[0] !== 'order' && segments[0] !== 'add-customer' && 
-               segments[0] !== 'add-order' && segments[0] !== 'add-measurement' &&
-               segments[0] !== 'edit-measurement' && segments[0] !== 'edit-order' &&
-               segments[0] !== 'search') {
-      // User is authenticated but on login/register page - redirect to home
-      if (segments[0] === 'index' || segments.length === 0 || segments[0] === 'register') {
-        router.replace('/(tabs)');
-      }
+      previousAuthState.current = isAuthenticated;
+      return;
+    }
+
+    // Update previous auth state
+    previousAuthState.current = isAuthenticated;
+
+    // Determine if current route is login/register (public routes)
+    const onPublicRoute = segments.length === 0 || segments[0] === 'index' || segments[0] === 'register' || segments[0] === undefined;
+
+    // NOT AUTHENTICATED: If on any protected route, go to login
+    if (!isAuthenticated && !onPublicRoute) {
+      console.log('NOT AUTHENTICATED on protected route - Redirecting to login');
+      router.replace('/');
+      return;
+    }
+
+    // AUTHENTICATED: If on login/register page, go to home
+    if (isAuthenticated && onPublicRoute) {
+      console.log('AUTHENTICATED on public route - Redirecting to home');
+      router.replace('/(tabs)');
+      return;
     }
   }, [isAuthenticated, isLoading, segments]);
 
