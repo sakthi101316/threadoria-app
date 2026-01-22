@@ -99,6 +99,7 @@ export default function AddCustomerScreen() {
 
     setLoading(true);
     try {
+      console.log('Creating customer...');
       await api.createCustomer({
         name: name.trim(),
         phone: phone.trim(),
@@ -107,10 +108,12 @@ export default function AddCustomerScreen() {
         notes: notes.trim(),
         user_id: user?.user_id || null,
       });
-      Alert.alert('Success', 'Customer added successfully', [
+      console.log('Customer created successfully!');
+      Alert.alert('Success', 'Customer added successfully!', [
         { text: 'OK', onPress: () => router.back() },
       ]);
     } catch (error: any) {
+      console.error('Error creating customer:', error);
       Alert.alert('Error', error.message || 'Failed to add customer');
     } finally {
       setLoading(false);
