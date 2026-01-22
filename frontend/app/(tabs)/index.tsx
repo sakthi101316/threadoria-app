@@ -139,8 +139,12 @@ export default function DashboardScreen() {
         <TouchableOpacity 
           style={styles.logoutButton}
           onPress={async () => {
+            // First logout to clear state
             await logout();
-            // Force navigation to login page after logout
+            // Use dismissTo to fully exit the tab stack and go to login
+            while (router.canGoBack()) {
+              router.back();
+            }
             router.replace('/');
           }}
         >
