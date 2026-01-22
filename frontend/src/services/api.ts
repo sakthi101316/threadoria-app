@@ -214,18 +214,21 @@ class ApiService {
   }
 
   // Dashboard
-  async getDashboardStats() {
+  async getDashboardStats(userId?: string) {
+    const query = userId ? `?user_id=${encodeURIComponent(userId)}` : '';
     return this.request<{
       total_customers: number;
       pending_orders: number;
       delivery_today: number;
       delivery_in_2_days: number;
-    }>('/dashboard/stats');
+    }>(`/dashboard/stats${query}`);
   }
 
   // Search
-  async globalSearch(query: string) {
-    return this.request<any[]>(`/search?q=${encodeURIComponent(query)}`);
+  async globalSearch(query: string, userId?: string) {
+    let url = `/search?q=${encodeURIComponent(query)}`;
+    if (userId) url += `&user_id=${encodeURIComponent(userId)}`;
+    return this.request<any[]>(url);
   }
 
   // Voice transcription
