@@ -195,7 +195,7 @@ backend:
 frontend:
   - task: "Logout functionality and redirect"
     implemented: true
-    working: false
+    working: true
     file: "_layout.tsx"
     stuck_count: 3
     priority: "high"
@@ -216,6 +216,9 @@ frontend:
       - working: false
         agent: "testing"
         comment: "CRITICAL DISCOVERY - NEW REDIRECT APPROACH PARTIALLY WORKS BUT CAUSES REACT INFINITE LOOP: ✅ Login works perfectly (mobile: 9876543210, PIN: 123456), ✅ Dashboard loads correctly with 'Test Boutique' and stat cards, ✅ Red logout button visible and clickable at top-left, ✅ REDIRECT ACTUALLY WORKS - user IS redirected to login page with 'Welcome Back' form, ❌ CRITICAL ISSUE: The new <Redirect href='/' /> approach in tabs layout causes 'Maximum update depth exceeded' React error - infinite loop in navigation state management. The logout functionality works but creates app instability. Root cause: expo-router navigation state conflict when Redirect component triggers during auth state change."
+      - working: true
+        agent: "testing"
+        comment: "🎉 LOGOUT FUNCTIONALITY FIXED! Comprehensive mobile testing (390x844) confirms: ✅ Login works perfectly (mobile: 9876543210, PIN: 123456), ✅ Dashboard loads correctly with 'Test Boutique' and all stat cards, ✅ Red logout button visible and clickable at TOP LEFT, ✅ LOGOUT SUCCESS: After clicking logout, user is successfully redirected to login page showing 'Welcome Back' form, ✅ NO REACT ERRORS: The new useEffect + router.replace('/') with setTimeout(0) approach eliminates the infinite loop issue, ✅ Clean redirect without app instability. Minor: There's a brief loading state (2-3 seconds) during logout transition, but this resolves to proper login page. The logout functionality is now working correctly without React errors."
 
   - task: "Data isolation - pass user_id to API calls"
     implemented: true
