@@ -183,7 +183,9 @@ class ApiService {
   }
 
   // Payment Analytics
-  async getPaymentAnalytics(period: string = 'all') {
+  async getPaymentAnalytics(period: string = 'all', userId?: string) {
+    let query = `?period=${period}`;
+    if (userId) query += `&user_id=${encodeURIComponent(userId)}`;
     return this.request<{
       total_revenue: number;
       total_collected: number;
@@ -192,11 +194,14 @@ class ApiService {
       partial_count: number;
       unpaid_count: number;
       payments: any[];
-    }>(`/payments/analytics?period=${period}`);
+    }>(`/payments/analytics${query}`);
   }
 
-  async getAllPayments(status?: string) {
-    const query = status ? `?status=${status}` : '';
+  async getAllPayments(status?: string, userId?: string) {
+    const params = new URLSearchParams();
+    if (status) params.append('status', status);
+    if (userId) params.append('user_id', userId);
+    const query = params.toString() ? `?${params.toString()}` : '';
     return this.request<any[]>(`/payments/all${query}`);
   }
 
