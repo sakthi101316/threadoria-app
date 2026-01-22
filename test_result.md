@@ -292,3 +292,24 @@ agent_communication:
       • URL remains at dashboard route instead of redirecting to login
       • No error messages displayed to user
       • This is a critical security and UX issue that must be fixed immediately
+  - agent: "testing"
+    message: |
+      🔄 FINAL LOGOUT TEST COMPLETED - BUG STILL PERSISTS!
+      
+      📱 MOBILE TEST RESULTS (390x844 viewport):
+      • ✅ App loads correctly with login form showing "Welcome Back"
+      • ✅ Login successful with mobile: 9876543210, PIN: 123456
+      • ✅ Dashboard loads showing "Test Boutique" and all stat cards (0 customers, 0 pending, etc.)
+      • ✅ Red logout button clearly visible at TOP LEFT of header
+      • ✅ Logout button is clickable and responds to user interaction
+      • ❌ CRITICAL BUG: After logout click, user remains on dashboard showing "Test Boutique"
+      • ❌ URL shows "/" but content is still dashboard, not login page
+      
+      🔧 TECHNICAL ANALYSIS:
+      • logout() function in AuthContext.tsx works (clears AsyncStorage, sets isAuthenticated=false)
+      • Navigation logic in _layout.tsx fails to redirect properly
+      • The useEffect hook (lines 15-45) should detect auth state change and redirect
+      • Previous auth state tracking with useRef may have issues
+      • This is a critical security vulnerability - users cannot properly log out
+      
+      🚨 RECOMMENDATION: This task has stuck_count=3 and needs immediate attention. The navigation logic in _layout.tsx requires debugging or complete rewrite.
