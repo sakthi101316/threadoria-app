@@ -141,10 +141,10 @@ export default function DashboardScreen() {
         <TouchableOpacity 
           style={styles.logoutButton}
           onPress={async () => {
-            // Clear storage and reload app
+            // Clear storage
             await AsyncStorage.multiRemove(['auth_token', 'user_data']);
-            const url = Linking.createURL('/');
-            Linking.openURL(url);
+            // Reload app completely
+            await Updates.reloadAsync();
           }}
         >
           <Feather name="log-out" size={16} color={COLORS.white} />
