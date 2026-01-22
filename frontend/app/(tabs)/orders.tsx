@@ -16,6 +16,7 @@ import { GlassCard } from '../../src/components/GlassCard';
 import { StatusBadge } from '../../src/components/StatusBadge';
 import { GoldButton } from '../../src/components/GoldButton';
 import { api } from '../../src/services/api';
+import { useAuth } from '../../src/context/AuthContext';
 import { format, isToday, isTomorrow, addDays, isBefore, isAfter, startOfDay, endOfDay } from 'date-fns';
 
 interface Order {
