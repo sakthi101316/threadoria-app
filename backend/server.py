@@ -575,10 +575,13 @@ async def create_order(order: OrderCreate):
 async def get_orders(
     status: Optional[str] = None,
     customer_id: Optional[str] = None,
-    search: Optional[str] = None
+    search: Optional[str] = None,
+    user_id: Optional[str] = None
 ):
     """Get all orders with optional filters"""
     query = {}
+    if user_id:
+        query["user_id"] = user_id
     if status:
         query["status"] = status
     if customer_id:
