@@ -61,7 +61,7 @@ export default function DashboardScreen() {
 
   const fetchStats = async () => {
     try {
-      const data = await api.getDashboardStats();
+      const data = await api.getDashboardStats(user?.user_id);
       setStats(data);
     } catch (error) {
       console.error('Failed to fetch stats:', error);
