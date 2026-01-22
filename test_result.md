@@ -269,3 +269,23 @@ agent_communication:
       • All backend endpoints properly implement multi-tenant architecture
       
       🔒 DATA ISOLATION IS FULLY FUNCTIONAL - The critical bug has been FIXED!
+  - agent: "testing"
+    message: |
+      ❌ CRITICAL LOGOUT BUG CONFIRMED - URGENT FIX NEEDED!
+      
+      🔍 COMPREHENSIVE LOGOUT TESTING RESULTS:
+      • ✅ Login functionality works perfectly (user can authenticate and reach dashboard)
+      • ✅ Logout button is visible and clickable on dashboard header
+      • ❌ CRITICAL ISSUE: After clicking logout, user remains on dashboard instead of redirecting to login page
+      • ❌ Auth state is cleared but navigation logic in _layout.tsx is not working
+      
+      🚨 ROOT CAUSE ANALYSIS:
+      • The logout() function in AuthContext.tsx successfully clears AsyncStorage and sets isAuthenticated=false
+      • However, the useEffect in _layout.tsx that should detect this change and redirect is not triggering properly
+      • This creates a broken user experience where users cannot properly log out of the application
+      
+      📋 TECHNICAL DETAILS:
+      • Dashboard shows "Test Boutique" (user's boutique name) after logout attempt
+      • URL remains at dashboard route instead of redirecting to login
+      • No error messages displayed to user
+      • This is a critical security and UX issue that must be fixed immediately
