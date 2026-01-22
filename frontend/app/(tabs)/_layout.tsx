@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from 'react';
-import { Tabs, useRouter } from 'expo-router';
+import React from 'react';
+import { Tabs } from 'expo-router';
 import { MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import { COLORS } from '../../src/constants/theme';
 import { useAuth } from '../../src/context/AuthContext';
@@ -7,20 +7,6 @@ import { View, ActivityIndicator } from 'react-native';
 
 export default function TabsLayout() {
   const { isAuthenticated, isLoading } = useAuth();
-  const router = useRouter();
-  const hasRedirected = useRef(false);
-
-  // Redirect unauthenticated users to login - only once
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated && !hasRedirected.current) {
-      hasRedirected.current = true;
-      router.replace('/');
-    }
-    // Reset the flag when user becomes authenticated again
-    if (isAuthenticated) {
-      hasRedirected.current = false;
-    }
-  }, [isAuthenticated, isLoading]);
 
   // Show loading screen while checking auth
   if (isLoading) {
@@ -31,13 +17,9 @@ export default function TabsLayout() {
     );
   }
 
-  // If not authenticated, show loading while redirecting (prevents flash of tabs)
+  // If not authenticated, return null - root layout will handle redirect
   if (!isAuthenticated) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.cream }}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
-      </View>
-    );
+    return null;
   }
 
   return (
