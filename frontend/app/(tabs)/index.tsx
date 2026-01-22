@@ -31,6 +31,7 @@ interface DashboardStats {
 
 export default function DashboardScreen() {
   const router = useRouter();
+  const navigation = useNavigation();
   const { logout, user } = useAuth();
   const [stats, setStats] = useState<DashboardStats>({
     total_customers: 0,
