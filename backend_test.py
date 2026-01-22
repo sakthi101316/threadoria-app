@@ -109,7 +109,7 @@ class BoutiqueFitTester:
         # Login User A
         self.log("Logging in User A...")
         login_response_a = self.session.post(f"{BASE_URL}/auth/login", json={
-            "email": "9876543210",  # Using phone as email
+            "email": self.phone_a,  # Using phone as email
             "pin": "123456"
         })
         
@@ -128,7 +128,7 @@ class BoutiqueFitTester:
         # Login User B
         self.log("Logging in User B...")
         login_response_b = self.session.post(f"{BASE_URL}/auth/login", json={
-            "email": "9876543211",  # Using phone as email
+            "email": self.phone_b,  # Using phone as email
             "pin": "123456"
         })
         
