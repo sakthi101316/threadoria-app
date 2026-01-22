@@ -229,7 +229,6 @@ metadata:
 test_plan:
   current_focus:
     - "Logout functionality and redirect"
-    - "Data isolation - user_id filtering"
   stuck_tasks:
     - "Logout functionality and redirect"
   test_all: false
