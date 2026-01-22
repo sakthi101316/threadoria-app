@@ -17,6 +17,7 @@ import { GlassCard } from '../src/components/GlassCard';
 import { StatusBadge } from '../src/components/StatusBadge';
 import { VoiceButton } from '../src/components/VoiceButton';
 import { api } from '../src/services/api';
+import { useAuth } from '../src/context/AuthContext';
 
 interface SearchResult {
   type: string;
