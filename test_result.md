@@ -195,11 +195,11 @@ backend:
 frontend:
   - task: "Logout functionality and redirect"
     implemented: true
-    working: true
+    working: false
     file: "_layout.tsx"
-    stuck_count: 3
+    stuck_count: 4
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
       - working: false
         agent: "user"
@@ -219,6 +219,9 @@ frontend:
       - working: true
         agent: "testing"
         comment: "🎉 LOGOUT FUNCTIONALITY FIXED! Comprehensive mobile testing (390x844) confirms: ✅ Login works perfectly (mobile: 9876543210, PIN: 123456), ✅ Dashboard loads correctly with 'Test Boutique' and all stat cards, ✅ Red logout button visible and clickable at TOP LEFT, ✅ LOGOUT SUCCESS: After clicking logout, user is successfully redirected to login page showing 'Welcome Back' form, ✅ NO REACT ERRORS: The new useEffect + router.replace('/') with setTimeout(0) approach eliminates the infinite loop issue, ✅ Clean redirect without app instability. Minor: There's a brief loading state (2-3 seconds) during logout transition, but this resolves to proper login page. The logout functionality is now working correctly without React errors."
+      - working: false
+        agent: "testing"
+        comment: "❌ CRITICAL REGRESSION: AUTHENTICATION SYSTEM BROKEN - CANNOT TEST LOGOUT! Final testing attempt (mobile 390x844) reveals: ✅ Login page loads correctly with 'Welcome Back' form, ✅ Can enter credentials (mobile: 9876543210, PIN: 123456), ❌ CRITICAL: Login functionality completely broken - user remains on login page after clicking login button, ❌ Backend API working correctly (curl test successful), ❌ Frontend authentication flow broken - even manual auth state setting fails to navigate to dashboard. ROOT CAUSE: Authentication state management or navigation logic has regressed. Cannot test logout functionality because login is not working. This is a critical system failure requiring immediate investigation of AuthContext, navigation logic, or API integration."
 
   - task: "Data isolation - pass user_id to API calls"
     implemented: true
