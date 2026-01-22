@@ -14,8 +14,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons, FontAwesome5, Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Updates from 'expo-updates';
 import { COLORS, SPACING, BORDER_RADIUS, SHADOWS, APP_CONFIG } from '../../src/constants/theme';
 import { GlassCard } from '../../src/components/GlassCard';
 import { api } from '../../src/services/api';
