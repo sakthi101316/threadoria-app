@@ -6,11 +6,10 @@ import { useAuth } from '../../src/context/AuthContext';
 import { View, ActivityIndicator } from 'react-native';
 
 export default function TabsLayout() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isLoading } = useAuth();
 
-  // Show loading screen while checking auth or if not authenticated
-  // The logout button will handle navigation directly
-  if (isLoading || !isAuthenticated) {
+  // Only show loading while initial auth check is happening
+  if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.cream }}>
         <ActivityIndicator size="large" color={COLORS.primary} />
@@ -18,6 +17,7 @@ export default function TabsLayout() {
     );
   }
 
+  // Always render tabs - the logout button handles navigation directly
   return (
     <Tabs
       screenOptions={{
