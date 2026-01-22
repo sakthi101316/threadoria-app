@@ -143,8 +143,12 @@ export default function DashboardScreen() {
           onPress={async () => {
             // Clear storage
             await AsyncStorage.multiRemove(['auth_token', 'user_data']);
-            // Reload app completely
-            await Updates.reloadAsync();
+            // Show message and ask user to restart
+            Alert.alert(
+              'Logged Out',
+              'You have been logged out. Please close and reopen the app.',
+              [{ text: 'OK' }]
+            );
           }}
         >
           <Feather name="log-out" size={16} color={COLORS.white} />
