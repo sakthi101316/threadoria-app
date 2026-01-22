@@ -97,7 +97,8 @@ export default function LoginScreen() {
     try {
       const result = await login(phone.trim(), pin.trim());
       if (result.success) {
-        // Navigation will be handled by useEffect when isAuthenticated becomes true
+        // Navigate to tabs after successful login
+        router.replace('/(tabs)');
       } else {
         Alert.alert('Login Failed', result.message);
       }
