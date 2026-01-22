@@ -21,6 +21,8 @@ class BoutiqueFitTester:
         self.customer_b_id = None
         self.order_a_id = None
         self.order_b_id = None
+        self.phone_a = None
+        self.phone_b = None
         
     def log(self, message, status="INFO"):
         timestamp = datetime.now().strftime("%H:%M:%S")
