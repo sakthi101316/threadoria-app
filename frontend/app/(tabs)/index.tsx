@@ -141,13 +141,8 @@ export default function DashboardScreen() {
           onPress={async () => {
             // Clear auth first
             await logout();
-            // Use CommonActions.reset to completely reset navigation to login screen
-            navigation.dispatch(
-              CommonActions.reset({
-                index: 0,
-                routes: [{ name: 'index' }],
-              })
-            );
+            // Navigate to login screen
+            router.replace('/');
           }}
         >
           <Feather name="log-out" size={16} color={COLORS.white} />
