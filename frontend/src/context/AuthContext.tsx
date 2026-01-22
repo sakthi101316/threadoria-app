@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const API_BASE = process.env.EXPO_PUBLIC_BACKEND_URL || '';
@@ -36,9 +36,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (token && userData) {
         setUser(JSON.parse(userData));
         setIsAuthenticated(true);
+      } else {
+        setUser(null);
+        setIsAuthenticated(false);
       }
     } catch (error) {
       console.error('Auth check error:', error);
+      setUser(null);
+      setIsAuthenticated(false);
     } finally {
       setIsLoading(false);
     }
@@ -73,12 +78,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const logout = async () => {
-    await AsyncStorage.removeItem('auth_token');
-    await AsyncStorage.removeItem('user_data');
+  const logout = useCallback(async () => {
+    console.log('LOGOUT: Starting logout process');
+    // Clear storage first
+    await AsyncStorage.multiRemove(['auth_token', 'user_data']);
+    console.log('LOGOUT: Storage cleared');
+    // Then update state
     setUser(null);
     setIsAuthenticated(false);
-  };
+    console.log('LOGOUT: State updated - isAuthenticated set to false');
+    // Small delay to ensure state propagates
+    await new Promise(resolve => setTimeout(resolve, 100));
+    console.log('LOGOUT: Complete');
+  }, []);
 
   return (
     <AuthContext.Provider value={{ user, isAuthenticated, isLoading, login, logout }}>
