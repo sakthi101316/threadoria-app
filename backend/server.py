@@ -982,17 +982,31 @@ async def get_dashboard_stats(user_id: Optional[str] = None):
 # ========================== SEARCH ROUTES ==========================
 
 @api_router.get("/search", response_model=List[SearchResult])
-async def global_search(q: str):
-    """Global search across customers and orders"""
+async def global_search(q: str, user_id: Optional[str] = None):
+    """Global search across customers and orders filtered by user_id"""
     results = []
     
-    # Search customers
-    customers = await db.customers.find({
+    # Build base query with user_id filter
+    customer_query = {
         "$or": [
             {"name": {"$regex": q, "$options": "i"}},
             {"phone": {"$regex": q, "$options": "i"}}
         ]
-    }).limit(10).to_list(10)
+    }
+    order_query = {
+        "$or": [
+            {"customer_name": {"$regex": q, "$options": "i"}},
+            {"customer_phone": {"$regex": q, "$options": "i"}},
+            {"order_type": {"$regex": q, "$options": "i"}}
+        ]
+    }
+    
+    if user_id:
+        customer_query["user_id"] = user_id
+        order_query["user_id"] = user_id
+    
+    # Search customers
+    customers = await db.customers.find(customer_query).limit(10).to_list(10)
     
     for c in customers:
         results.append(SearchResult(
@@ -1004,13 +1018,7 @@ async def global_search(q: str):
         ))
     
     # Search orders
-    orders = await db.orders.find({
-        "$or": [
-            {"customer_name": {"$regex": q, "$options": "i"}},
-            {"customer_phone": {"$regex": q, "$options": "i"}},
-            {"order_type": {"$regex": q, "$options": "i"}}
-        ]
-    }).limit(10).to_list(10)
+    orders = await db.orders.find(order_query).limit(10).to_list(10)
     
     for o in orders:
         results.append(SearchResult(
