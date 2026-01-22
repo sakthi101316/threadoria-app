@@ -213,6 +213,9 @@ frontend:
       - working: false
         agent: "testing"
         comment: "RE-CONFIRMED CRITICAL LOGOUT BUG: Detailed mobile testing (390x844) shows: ✅ Login works perfectly (mobile: 9876543210, PIN: 123456), ✅ Dashboard loads with 'Test Boutique' and stat cards, ✅ Red logout button visible and clickable at top-left, ❌ CRITICAL: After logout click, user remains on dashboard showing 'Test Boutique' instead of redirecting to login page. URL shows '/' but content is still dashboard. The logout() function clears AsyncStorage and sets isAuthenticated=false, but the useEffect navigation logic in _layout.tsx fails to redirect properly. This is a critical security/UX issue requiring immediate fix."
+      - working: false
+        agent: "testing"
+        comment: "CRITICAL DISCOVERY - NEW REDIRECT APPROACH PARTIALLY WORKS BUT CAUSES REACT INFINITE LOOP: ✅ Login works perfectly (mobile: 9876543210, PIN: 123456), ✅ Dashboard loads correctly with 'Test Boutique' and stat cards, ✅ Red logout button visible and clickable at top-left, ✅ REDIRECT ACTUALLY WORKS - user IS redirected to login page with 'Welcome Back' form, ❌ CRITICAL ISSUE: The new <Redirect href='/' /> approach in tabs layout causes 'Maximum update depth exceeded' React error - infinite loop in navigation state management. The logout functionality works but creates app instability. Root cause: expo-router navigation state conflict when Redirect component triggers during auth state change."
 
   - task: "Data isolation - pass user_id to API calls"
     implemented: true
