@@ -138,14 +138,9 @@ export default function DashboardScreen() {
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.logoutButton}
-          onPress={async () => {
-            // First logout to clear state
-            await logout();
-            // Use dismissTo to fully exit the tab stack and go to login
-            while (router.canGoBack()) {
-              router.back();
-            }
-            router.replace('/');
+          onPress={() => {
+            // Just call logout - the Redirect component in tabs layout will handle navigation
+            logout();
           }}
         >
           <Feather name="log-out" size={16} color={COLORS.white} />
