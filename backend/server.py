@@ -680,12 +680,22 @@ async def update_order_status(order_id: str, status: str):
         raise HTTPException(status_code=400, detail=str(e))
 
 @api_router.delete("/orders/{order_id}")
-async def delete_order(order_id: str):
-    """Delete an order"""
+async def delete_order(order_id: str, user_id: Optional[str] = None):
+    """Delete an order - optionally verify ownership with user_id"""
     try:
-        result = await db.orders.delete_one({"_id": ObjectId(order_id)})
+        # Build query with optional user_id verification
+        query = {"_id": ObjectId(order_id)}
+        if user_id:
+            query["user_id"] = user_id
+        
+        # Check if order exists and belongs to user
+        order = await db.orders.find_one(query)
+        if not order:
+            raise HTTPException(status_code=404, detail="Order not found or access denied")
+        
+        result = await db.orders.delete_one(query)
         if result.deleted_count == 0:
-            raise HTTPException(status_code=404, detail="Order not found")
+            raise HTTPException(status_code=404, detail="Order not found or access denied")
         # Also delete related payments
         await db.payments.delete_many({"order_id": order_id})
         return {"message": "Order deleted successfully"}
