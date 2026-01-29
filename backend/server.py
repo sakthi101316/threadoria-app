@@ -428,19 +428,21 @@ async def get_customer(customer_id: str, user_id: Optional[str] = None):
         raise HTTPException(status_code=400, detail=str(e))
 
 @api_router.put("/customers/{customer_id}", response_model=CustomerResponse)
-async def update_customer(customer_id: str, update: CustomerUpdate):
-    """Update a customer"""
+async def update_customer(customer_id: str, update: CustomerUpdate, user_id: Optional[str] = None):
+    """Update a customer - optionally verify ownership with user_id"""
     try:
+        # Build query with optional user_id verification
+        query = {"_id": ObjectId(customer_id)}
+        if user_id:
+            query["user_id"] = user_id
+        
         update_data = {k: v for k, v in update.dict().items() if v is not None}
         if not update_data:
             raise HTTPException(status_code=400, detail="No update data provided")
         
-        result = await db.customers.update_one(
-            {"_id": ObjectId(customer_id)},
-            {"$set": update_data}
-        )
+        result = await db.customers.update_one(query, {"$set": update_data})
         if result.matched_count == 0:
-            raise HTTPException(status_code=404, detail="Customer not found")
+            raise HTTPException(status_code=404, detail="Customer not found or access denied")
         
         customer = await db.customers.find_one({"_id": ObjectId(customer_id)})
         return CustomerResponse(**serialize_doc(customer))
