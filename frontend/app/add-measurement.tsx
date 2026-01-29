@@ -587,19 +587,21 @@ export default function AddMeasurementScreen() {
             <Text style={styles.sectionTitle}>{category} Measurements (inches)</Text>
             <View style={styles.measurementsGrid}>
               {(category === 'Top' ? topFields : bottomFields).map((field) => (
-                <MeasurementInput
+                <MeasurementInputField
                   key={field.key}
-                  field={field}
+                  fieldKey={field.key}
+                  label={field.label}
                   value={category === 'Top' 
                     ? topMeasurements[field.key as keyof typeof topMeasurements] 
                     : bottomMeasurements[field.key as keyof typeof bottomMeasurements]}
-                  onChange={(v) => {
+                  onChange={(key, v) => {
                     if (category === 'Top') {
-                      setTopMeasurements(prev => ({ ...prev, [field.key]: v }));
+                      setTopMeasurements(prev => ({ ...prev, [key]: v }));
                     } else {
-                      setBottomMeasurements(prev => ({ ...prev, [field.key]: v }));
+                      setBottomMeasurements(prev => ({ ...prev, [key]: v }));
                     }
                   }}
+                  isHighlighted={lastFilledField === field.key}
                 />
               ))}
             </View>
