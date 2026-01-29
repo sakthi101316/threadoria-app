@@ -207,7 +207,7 @@ export default function AddMeasurementScreen() {
     return filled;
   };
 
-  // Process audio chunk
+  // Process audio chunk - only if there's actual speech
   const processAudioChunk = async (uri: string) => {
     try {
       setStatusText('Processing...');
@@ -215,6 +215,12 @@ export default function AddMeasurementScreen() {
       // Use fetch to read the file as blob, then convert to base64
       const response = await fetch(uri);
       const blob = await response.blob();
+      
+      // Skip processing if audio is too short (likely silence)
+      if (blob.size < 5000) {
+        setStatusText('Listening...');
+        return;
+      }
       
       const base64Audio = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
@@ -228,18 +234,24 @@ export default function AddMeasurementScreen() {
         reader.readAsDataURL(blob);
       });
       
-      if (base64Audio && base64Audio.length > 1000) {
+      // Only process if we have substantial audio data
+      if (base64Audio && base64Audio.length > 2000) {
         const result = await api.transcribeVoice(base64Audio, 'm4a');
         
-        if (result.success && result.text && result.text.trim()) {
+        if (result.success && result.text && result.text.trim() && result.text.trim().length > 2) {
           const newText = result.text.trim();
-          setTranscribedText(prev => {
-            const combined = prev ? `${prev} ${newText}` : newText;
-            return combined.slice(-150);
-          });
-          const filled = parseAndFillMeasurements(newText);
-          if (filled) {
-            setStatusText('✓ Field filled!');
+          // Ignore common noise/silence transcriptions
+          if (!['', '.', '..', '...', 'you', 'the', 'a', 'hmm', 'uh', 'um'].includes(newText.toLowerCase())) {
+            setTranscribedText(prev => {
+              const combined = prev ? `${prev} ${newText}` : newText;
+              return combined.slice(-150);
+            });
+            const filled = parseAndFillMeasurements(newText);
+            if (filled) {
+              setStatusText('✓ Field filled!');
+            } else {
+              setStatusText('Listening...');
+            }
           } else {
             setStatusText('Listening...');
           }
