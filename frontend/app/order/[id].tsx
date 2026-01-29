@@ -361,6 +361,25 @@ export default function OrderDetailScreen() {
           </View>
         </GlassCard>
       </ScrollView>
+
+      {/* Full Image Viewer Modal */}
+      <Modal visible={!!selectedImage} transparent animationType="fade">
+        <View style={styles.imageModalOverlay}>
+          <TouchableOpacity 
+            style={styles.imageModalClose} 
+            onPress={() => setSelectedImage(null)}
+          >
+            <Ionicons name="close" size={32} color={COLORS.white} />
+          </TouchableOpacity>
+          {selectedImage && (
+            <Image 
+              source={{ uri: selectedImage }} 
+              style={styles.fullImage} 
+              resizeMode="contain"
+            />
+          )}
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
