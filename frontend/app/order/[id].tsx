@@ -590,4 +590,21 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: COLORS.black,
   },
+  imageModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  imageModalClose: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    zIndex: 10,
+    padding: 10,
+  },
+  fullImage: {
+    width: screenWidth,
+    height: screenHeight * 0.8,
+  },
 });
