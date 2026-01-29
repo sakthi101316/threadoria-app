@@ -9,6 +9,8 @@ import {
   Image,
   RefreshControl,
   Linking,
+  Modal,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -20,6 +22,8 @@ import { GoldButton } from '../../src/components/GoldButton';
 import { StatusBadge } from '../../src/components/StatusBadge';
 import { api } from '../../src/services/api';
 import { format } from 'date-fns';
+
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 interface Order {
   id: string;
