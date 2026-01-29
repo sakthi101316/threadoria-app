@@ -600,10 +600,13 @@ async def get_orders(
     return [OrderResponse(**serialize_doc(o)) for o in orders]
 
 @api_router.get("/orders/{order_id}", response_model=OrderResponse)
-async def get_order(order_id: str):
-    """Get a single order"""
+async def get_order(order_id: str, user_id: Optional[str] = None):
+    """Get a single order - optionally verify ownership with user_id"""
     try:
-        order = await db.orders.find_one({"_id": ObjectId(order_id)})
+        query = {"_id": ObjectId(order_id)}
+        if user_id:
+            query["user_id"] = user_id
+        order = await db.orders.find_one(query)
         if not order:
             raise HTTPException(status_code=404, detail="Order not found")
         return OrderResponse(**serialize_doc(order))
