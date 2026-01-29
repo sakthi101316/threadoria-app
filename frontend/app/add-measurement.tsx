@@ -120,7 +120,7 @@ export default function AddMeasurementScreen() {
     { key: 'front_deep', label: 'Front Deep' },
     { key: 'back_deep', label: 'Back Deep' },
     { key: 'sleeve_length', label: 'Sleeve Length' },
-    { key: 'sleeve_round', label: 'Sleeve Round' },
+    { key: 'sleeve_round', label: 'Sleeve Around' },
     { key: 'arm_hole', label: 'Arm Hole' },
     { key: 'biceps', label: 'Biceps' },
     { key: 'dot_point', label: 'Dot Point' },
