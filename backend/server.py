@@ -414,10 +414,13 @@ async def get_customers(search: Optional[str] = None, user_id: Optional[str] = N
     return [CustomerResponse(**serialize_doc(c)) for c in customers]
 
 @api_router.get("/customers/{customer_id}", response_model=CustomerResponse)
-async def get_customer(customer_id: str):
-    """Get a single customer by ID"""
+async def get_customer(customer_id: str, user_id: Optional[str] = None):
+    """Get a single customer - optionally verify ownership with user_id"""
     try:
-        customer = await db.customers.find_one({"_id": ObjectId(customer_id)})
+        query = {"_id": ObjectId(customer_id)}
+        if user_id:
+            query["user_id"] = user_id
+        customer = await db.customers.find_one(query)
         if not customer:
             raise HTTPException(status_code=404, detail="Customer not found")
         return CustomerResponse(**serialize_doc(customer))
