@@ -136,18 +136,11 @@ export default function DashboardScreen() {
         style={StyleSheet.absoluteFill}
       />
       
-      {/* Header with Logout Button */}
+      {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.logoutButton}
-          onPress={() => {
-            logout();
-          }}
-        >
-          <Feather name="log-out" size={16} color={COLORS.white} />
-          <Text style={styles.logoutText}>Logout</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>BoutiqueFit</Text>
+        <View style={styles.logoContainer}>
+          <Text style={styles.headerTitle}>BoutiqueFit</Text>
+        </View>
         <TouchableOpacity 
           style={styles.headerButton}
           onPress={() => router.push('/search')}
