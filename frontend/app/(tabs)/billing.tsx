@@ -62,7 +62,6 @@ export default function BillingScreen() {
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [showQRModal, setShowQRModal] = useState(false);
   const [showRecordPaymentModal, setShowRecordPaymentModal] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<PaymentRecord | null>(null);
   const [paymentAmount, setPaymentAmount] = useState('');
