@@ -1103,7 +1103,17 @@ async def transcribe_voice(request: VoiceTranscriptionRequest):
             "don't forget",
             "channel",
             "video",
-            "watching"
+            "watching",
+            "fema.gov",
+            "fema",
+            "pissedconsumer",
+            "review no",
+            "www.",
+            "http",
+            "visit",
+            "information",
+            "please see",
+            "more info"
         ]
         
         lower_text = result_text.lower()
