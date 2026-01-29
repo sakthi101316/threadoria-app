@@ -625,9 +625,14 @@ async def get_order(order_id: str, user_id: Optional[str] = None):
         raise HTTPException(status_code=400, detail=str(e))
 
 @api_router.put("/orders/{order_id}", response_model=OrderResponse)
-async def update_order(order_id: str, update: OrderUpdate):
-    """Update an order"""
+async def update_order(order_id: str, update: OrderUpdate, user_id: Optional[str] = None):
+    """Update an order - optionally verify ownership with user_id"""
     try:
+        # Build query with optional user_id verification
+        query = {"_id": ObjectId(order_id)}
+        if user_id:
+            query["user_id"] = user_id
+        
         update_data = {}
         if update.measurement_id is not None:
             update_data['measurement_id'] = update.measurement_id
@@ -647,12 +652,9 @@ async def update_order(order_id: str, update: OrderUpdate):
         if not update_data:
             raise HTTPException(status_code=400, detail="No update data provided")
         
-        result = await db.orders.update_one(
-            {"_id": ObjectId(order_id)},
-            {"$set": update_data}
-        )
+        result = await db.orders.update_one(query, {"$set": update_data})
         if result.matched_count == 0:
-            raise HTTPException(status_code=404, detail="Order not found")
+            raise HTTPException(status_code=404, detail="Order not found or access denied")
         
         order = await db.orders.find_one({"_id": ObjectId(order_id)})
         return OrderResponse(**serialize_doc(order))
