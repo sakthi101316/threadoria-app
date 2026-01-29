@@ -37,7 +37,7 @@ const FIELD_MAPPINGS: { [key: string]: string } = {
   'sleeve length': 'sleeve_length',
   'sleeve': 'sleeve_length',
   'sleeves': 'sleeve_length',
-  'sleeve round': 'sleeve_round',
+  'sleeve around': 'sleeve_round',
   'arm hole': 'arm_hole',
   'armhole': 'arm_hole',
   'biceps': 'biceps',
