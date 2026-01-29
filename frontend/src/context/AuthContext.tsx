@@ -1,7 +1,9 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AppState, AppStateStatus } from 'react-native';
 
 const API_BASE = process.env.EXPO_PUBLIC_BACKEND_URL || '';
+const IDLE_TIMEOUT = 60 * 60 * 1000; // 1 hour in milliseconds
 
 interface User {
   user_id: string;
@@ -23,6 +25,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const lastActiveTime = useRef<number>(Date.now());
+  const idleTimer = useRef<NodeJS.Timeout | null>(null);
+
+  // Check for idle timeout
+  const checkIdleTimeout = useCallback(async () => {
+    const now = Date.now();
+    if (now - lastActiveTime.current > IDLE_TIMEOUT && isAuthenticated) {
+      console.log('AUTO-LOGOUT: Idle timeout exceeded');
+      await AsyncStorage.multiRemove(['auth_token', 'user_data']);
+      setUser(null);
+      setIsAuthenticated(false);
+    }
+  }, [isAuthenticated]);
+
+  // Update last active time on user interaction
+  const updateActivity = useCallback(() => {
+    lastActiveTime.current = Date.now();
+  }, []);
+
+  // Handle app state changes (background/foreground)
+  useEffect(() => {
+    const handleAppStateChange = async (nextAppState: AppStateStatus) => {
+      if (nextAppState === 'background' || nextAppState === 'inactive') {
+        // App going to background - clear auth for security
+        console.log('APP BACKGROUND: Clearing auth');
+        await AsyncStorage.multiRemove(['auth_token', 'user_data']);
+      }
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    return () => subscription?.remove();
+  }, []);
+
+  // Set up idle timer
+  useEffect(() => {
+    if (isAuthenticated) {
+      idleTimer.current = setInterval(checkIdleTimeout, 60000); // Check every minute
+    }
+    return () => {
+      if (idleTimer.current) {
+        clearInterval(idleTimer.current);
+      }
+    };
+  }, [isAuthenticated, checkIdleTimeout]);
 
   useEffect(() => {
     checkAuth();
@@ -36,6 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (token && userData) {
         setUser(JSON.parse(userData));
         setIsAuthenticated(true);
+        lastActiveTime.current = Date.now();
       } else {
         setUser(null);
         setIsAuthenticated(false);
@@ -69,6 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await AsyncStorage.setItem('user_data', JSON.stringify(userData));
         setUser(userData);
         setIsAuthenticated(true);
+        lastActiveTime.current = Date.now();
         return { success: true, message: 'Login successful' };
       } else {
         return { success: false, message: data.detail || data.message || 'Invalid credentials' };
@@ -80,16 +128,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     console.log('LOGOUT: Starting logout process');
-    // Clear storage first
     await AsyncStorage.multiRemove(['auth_token', 'user_data']);
     console.log('LOGOUT: Storage cleared');
-    // Then update state
     setUser(null);
     setIsAuthenticated(false);
-    console.log('LOGOUT: State updated - isAuthenticated set to false');
-    // Small delay to ensure state propagates
-    await new Promise(resolve => setTimeout(resolve, 100));
-    console.log('LOGOUT: Complete');
+    console.log('LOGOUT: State updated');
   }, []);
 
   return (
