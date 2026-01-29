@@ -274,9 +274,7 @@ export default function BillingScreen() {
           <Feather name="arrow-left" size={24} color={COLORS.black} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Billing & Payments</Text>
-        <TouchableOpacity style={styles.qrButton} onPress={() => setShowQRModal(true)}>
-          <MaterialCommunityIcons name="qrcode-scan" size={24} color={COLORS.white} />
-        </TouchableOpacity>
+        <View style={styles.headerRight} />
       </View>
 
       <ScrollView
