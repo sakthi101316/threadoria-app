@@ -16,8 +16,12 @@ function Navigator() {
     );
   }
 
+  // Use key to force complete re-mount when auth state changes
   return (
-    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: COLORS.cream } }}>
+    <Stack 
+      key={isAuthenticated ? 'authenticated' : 'unauthenticated'}
+      screenOptions={{ headerShown: false, contentStyle: { backgroundColor: COLORS.cream } }}
+    >
       {!isAuthenticated ? (
         <>
           <Stack.Screen name="index" />
