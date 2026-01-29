@@ -332,24 +332,6 @@ export default function BillingScreen() {
           </View>
         )}
 
-        {/* QR Code Section */}
-        <GlassCard style={styles.qrSection}>
-          <View style={styles.qrHeader}>
-            <MaterialCommunityIcons name="qrcode" size={24} color={COLORS.gold} />
-            <Text style={styles.qrTitle}>Payment QR Code</Text>
-          </View>
-          <Text style={styles.qrSubtitle}>Customers can scan to make payment</Text>
-          <TouchableOpacity onPress={() => setShowQRModal(true)}>
-            <Image source={{ uri: QR_CODE_URL }} style={styles.qrPreview} resizeMode="contain" />
-          </TouchableOpacity>
-          <GoldButton
-            title="Show QR to Customer"
-            onPress={() => setShowQRModal(true)}
-            variant="outline"
-            style={styles.qrButton2}
-          />
-        </GlassCard>
-
         {/* Status Filter */}
         <Text style={styles.sectionTitle}>Payment Records</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.statusFilter}>
