@@ -450,16 +450,25 @@ async def update_customer(customer_id: str, update: CustomerUpdate, user_id: Opt
         raise HTTPException(status_code=400, detail=str(e))
 
 @api_router.delete("/customers/{customer_id}")
-async def delete_customer(customer_id: str):
-    """Delete a customer"""
+async def delete_customer(customer_id: str, user_id: Optional[str] = None):
+    """Delete a customer and related data - optionally verify ownership with user_id"""
     try:
-        result = await db.customers.delete_one({"_id": ObjectId(customer_id)})
-        if result.deleted_count == 0:
-            raise HTTPException(status_code=404, detail="Customer not found")
+        # Build query with optional user_id verification
+        query = {"_id": ObjectId(customer_id)}
+        if user_id:
+            query["user_id"] = user_id
+        
+        # Check if customer exists and belongs to user
+        customer = await db.customers.find_one(query)
+        if not customer:
+            raise HTTPException(status_code=404, detail="Customer not found or access denied")
+        
         # Also delete related measurements and orders
         await db.measurements.delete_many({"customer_id": customer_id})
         await db.orders.delete_many({"customer_id": customer_id})
-        return {"message": "Customer deleted successfully"}
+        await db.customers.delete_one(query)
+        
+        return {"message": "Customer and related data deleted successfully"}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
