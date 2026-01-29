@@ -369,23 +369,6 @@ export default function BillingScreen() {
         )}
       </ScrollView>
 
-      {/* QR Code Modal */}
-      <Modal visible={showQRModal} animationType="fade" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.qrModalContent}>
-            <TouchableOpacity style={styles.closeButton} onPress={() => setShowQRModal(false)}>
-              <Ionicons name="close" size={28} color={COLORS.black} />
-            </TouchableOpacity>
-            <Text style={styles.qrModalTitle}>Scan to Pay</Text>
-            <Text style={styles.qrModalSubtitle}>Your Boutique</Text>
-            <Image source={{ uri: QR_CODE_URL }} style={styles.qrLarge} resizeMode="contain" />
-            <Text style={styles.qrInstruction}>
-              Ask customer to scan this QR code to make payment via UPI
-            </Text>
-          </View>
-        </View>
-      </Modal>
-
       {/* Record Payment Modal */}
       <Modal visible={showRecordPaymentModal} animationType="slide" transparent>
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
