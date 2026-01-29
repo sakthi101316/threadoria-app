@@ -322,7 +322,9 @@ export default function OrderDetailScreen() {
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               <View style={styles.photosRow}>
                 {order.material_photos.map((photo, index) => (
-                  <Image key={index} source={{ uri: photo }} style={styles.materialPhoto} />
+                  <TouchableOpacity key={index} onPress={() => setSelectedImage(photo)}>
+                    <Image source={{ uri: photo }} style={styles.materialPhoto} />
+                  </TouchableOpacity>
                 ))}
               </View>
             </ScrollView>
