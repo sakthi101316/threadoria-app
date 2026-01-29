@@ -436,6 +436,10 @@ export default function AddMeasurementScreen() {
     }
   };
 
+  const handleMeasurementChange = useCallback((key: string, value: string) => {
+    setMeasurements(prev => ({ ...prev, [key]: value }));
+  }, []);
+
   const handleSubmit = async () => {
     if (!customerId) {
       Alert.alert('Error', 'Customer ID is required');
