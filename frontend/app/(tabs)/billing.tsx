@@ -457,14 +457,8 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: COLORS.black,
   },
-  qrButton: {
+  headerRight: {
     width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: COLORS.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...SHADOWS.medium,
   },
   scrollContent: {
     padding: SPACING.md,
