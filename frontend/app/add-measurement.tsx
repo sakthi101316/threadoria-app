@@ -485,28 +485,6 @@ export default function AddMeasurementScreen() {
     }
   };
 
-  const MeasurementInput = ({ field, value, onChange }: { 
-    field: { key: string; label: string }; 
-    value: string; 
-    onChange: (v: string) => void 
-  }) => {
-    const isHighlighted = lastFilledField === field.key;
-    
-    return (
-      <View style={styles.measurementInput}>
-        <Text style={styles.inputLabel}>{field.label}</Text>
-        <TextInput
-          style={[styles.input, isHighlighted && styles.inputHighlighted]}
-          placeholder="0"
-          placeholderTextColor={COLORS.gray}
-          value={value}
-          onChangeText={onChange}
-          keyboardType="numeric"
-        />
-      </View>
-    );
-  };
-
   return (
     <SafeAreaView style={styles.container}>
       <LinearGradient
@@ -528,7 +506,7 @@ export default function AddMeasurementScreen() {
 
         <ScrollView 
           contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="always"
+          keyboardShouldPersistTaps="handled"
           keyboardDismissMode="none"
         >
           {/* Category Toggle */}
