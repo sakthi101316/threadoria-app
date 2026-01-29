@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
 import {
   View,
   Text,
@@ -22,6 +22,62 @@ import { COLORS, SPACING, BORDER_RADIUS, SHADOWS } from '../src/constants/theme'
 import { GlassCard } from '../src/components/GlassCard';
 import { GoldButton } from '../src/components/GoldButton';
 import { api } from '../src/services/api';
+
+// Memoized input component to prevent re-renders
+const MeasurementInputField = memo(({ 
+  fieldKey, 
+  label, 
+  value, 
+  onChange,
+  isHighlighted 
+}: { 
+  fieldKey: string;
+  label: string; 
+  value: string; 
+  onChange: (key: string, value: string) => void;
+  isHighlighted: boolean;
+}) => {
+  return (
+    <View style={inputStyles.measurementInput}>
+      <Text style={inputStyles.inputLabel}>{label}</Text>
+      <TextInput
+        style={[inputStyles.input, isHighlighted && inputStyles.inputHighlighted]}
+        placeholder="0"
+        placeholderTextColor={COLORS.gray}
+        value={value}
+        onChangeText={(v) => onChange(fieldKey, v)}
+        keyboardType="numeric"
+      />
+    </View>
+  );
+});
+
+const inputStyles = StyleSheet.create({
+  measurementInput: {
+    width: '48%',
+    marginBottom: SPACING.md,
+  },
+  inputLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.gray,
+    marginBottom: SPACING.xs,
+  },
+  input: {
+    backgroundColor: COLORS.white,
+    borderWidth: 1,
+    borderColor: COLORS.lightGray,
+    borderRadius: BORDER_RADIUS.md,
+    padding: SPACING.sm,
+    fontSize: 16,
+    color: COLORS.black,
+  },
+  inputHighlighted: {
+    borderColor: COLORS.success,
+    borderWidth: 2,
+    backgroundColor: '#F0FFF4',
+  },
+});
 
 // Field name mappings for voice recognition
 const FIELD_MAPPINGS: { [key: string]: string } = {
