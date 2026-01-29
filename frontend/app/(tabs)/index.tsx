@@ -140,15 +140,8 @@ export default function DashboardScreen() {
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.logoutButton}
-          onPress={async () => {
-            // Clear storage
-            await AsyncStorage.multiRemove(['auth_token', 'user_data']);
-            // Show message and ask user to restart
-            Alert.alert(
-              'Logged Out',
-              'You have been logged out. Please close and reopen the app.',
-              [{ text: 'OK' }]
-            );
+          onPress={() => {
+            logout();
           }}
         >
           <Feather name="log-out" size={16} color={COLORS.white} />
