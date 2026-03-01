@@ -362,10 +362,10 @@ async def login(credentials: UserLogin):
     # Added: January 2025
     # Remove this block after one month to restore public access
     # ============================================================
-    ALLOWED_USERNAME = "maahis"
-    ALLOWED_PIN = "MAAHIS101316"
+    ALLOWED_MOBILE = "9789967754"
+    ALLOWED_PIN = "101316"
     
-    if identifier.lower() != ALLOWED_USERNAME or credentials.pin != ALLOWED_PIN:
+    if identifier != ALLOWED_MOBILE or credentials.pin != ALLOWED_PIN:
         return UserResponse(
             success=False,
             message="This application is temporarily restricted for internal use only."
@@ -393,15 +393,14 @@ async def login(credentials: UserLogin):
         )
     
     # For the allowed user, create/find their account
-    # Check if MAAHIS account exists
-    maahis_user = await db.users.find_one({"phone": ALLOWED_USERNAME})
+    maahis_user = await db.users.find_one({"phone": ALLOWED_MOBILE})
     if not maahis_user:
-        # Create MAAHIS account if doesn't exist
+        # Create account if doesn't exist
         maahis_data = {
             "boutique_name": "MAAHIS Boutique",
             "owner_name": "MAAHIS",
             "email": "maahis@boutique.com",
-            "phone": ALLOWED_USERNAME,
+            "phone": ALLOWED_MOBILE,
             "pin": ALLOWED_PIN,
             "created_at": datetime.utcnow()
         }
