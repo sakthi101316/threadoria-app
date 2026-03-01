@@ -357,6 +357,23 @@ async def login(credentials: UserLogin):
     """Login with phone/email and PIN"""
     identifier = credentials.email.lower()
     
+    # ============================================================
+    # TEMPORARY RESTRICTION - INTERNAL USE ONLY
+    # Added: January 2025
+    # Remove this block after one month to restore public access
+    # ============================================================
+    ALLOWED_USERNAME = "maahis"
+    ALLOWED_PIN = "MAAHIS101316"
+    
+    if identifier.lower() != ALLOWED_USERNAME or credentials.pin != ALLOWED_PIN:
+        return UserResponse(
+            success=False,
+            message="This application is temporarily restricted for internal use only."
+        )
+    # ============================================================
+    # END OF TEMPORARY RESTRICTION
+    # ============================================================
+    
     # Check in database by email or phone
     user = await db.users.find_one({
         "$or": [
@@ -366,12 +383,41 @@ async def login(credentials: UserLogin):
         ]
     })
     
+    # If user exists in DB, return their data
     if user:
         return UserResponse(
             success=True,
             message="Login successful",
             user_id=str(user["_id"]),
             boutique_name=user.get("boutique_name", "Boutique")
+        )
+    
+    # For the allowed user, create/find their account
+    # Check if MAAHIS account exists
+    maahis_user = await db.users.find_one({"phone": ALLOWED_USERNAME})
+    if not maahis_user:
+        # Create MAAHIS account if doesn't exist
+        maahis_data = {
+            "boutique_name": "MAAHIS Boutique",
+            "owner_name": "MAAHIS",
+            "email": "maahis@boutique.com",
+            "phone": ALLOWED_USERNAME,
+            "pin": ALLOWED_PIN,
+            "created_at": datetime.utcnow()
+        }
+        result = await db.users.insert_one(maahis_data)
+        return UserResponse(
+            success=True,
+            message="Login successful",
+            user_id=str(result.inserted_id),
+            boutique_name="MAAHIS Boutique"
+        )
+    else:
+        return UserResponse(
+            success=True,
+            message="Login successful",
+            user_id=str(maahis_user["_id"]),
+            boutique_name=maahis_user.get("boutique_name", "MAAHIS Boutique")
         )
     
     return UserResponse(
