@@ -117,17 +117,6 @@ export default function SettingsScreen() {
           />
         </GlassCard>
 
-        {/* Actions */}
-        <GlassCard style={styles.section}>
-          <Text style={styles.sectionTitle}>Actions</Text>
-          <MenuItem
-            icon="log-out"
-            title="Logout"
-            onPress={handleLogout}
-            danger
-          />
-        </GlassCard>
-
         {/* Footer */}
         <View style={styles.footer}>
           <Text style={styles.footerText}>BoutiqueFit</Text>
