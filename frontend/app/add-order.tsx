@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -24,6 +24,55 @@ import { GlassCard } from '../src/components/GlassCard';
 import { GoldButton } from '../src/components/GoldButton';
 import { api } from '../src/services/api';
 import { format } from 'date-fns';
+
+// Memoized measurement input component - OUTSIDE main component to prevent keyboard closing
+const MeasurementInputField = memo(({ 
+  fieldKey, 
+  label, 
+  value, 
+  onChange 
+}: { 
+  fieldKey: string;
+  label: string; 
+  value: string; 
+  onChange: (key: string, value: string) => void;
+}) => {
+  return (
+    <View style={measurementStyles.measurementInput}>
+      <Text style={measurementStyles.measurementLabel}>{label}</Text>
+      <TextInput
+        style={measurementStyles.measurementInputField}
+        placeholder="0"
+        placeholderTextColor={COLORS.gray}
+        value={value}
+        onChangeText={(v) => onChange(fieldKey, v)}
+        keyboardType="numeric"
+      />
+    </View>
+  );
+});
+
+const measurementStyles = StyleSheet.create({
+  measurementInput: {
+    width: '31%',
+    marginBottom: SPACING.sm,
+  },
+  measurementLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: COLORS.gray,
+    marginBottom: 4,
+  },
+  measurementInputField: {
+    backgroundColor: COLORS.cream,
+    borderRadius: BORDER_RADIUS.sm,
+    padding: SPACING.sm,
+    fontSize: 14,
+    borderWidth: 1,
+    borderColor: COLORS.lightGray,
+    textAlign: 'center',
+  },
+});
 
 interface Customer {
   id: string;
@@ -53,7 +102,7 @@ export default function AddOrderScreen() {
   
   const [loading, setLoading] = useState(false);
 
-  // Measurements state
+  // Measurements state - ALL 15 fields for Top
   const [showMeasurements, setShowMeasurements] = useState(false);
   const [measurementCategory, setMeasurementCategory] = useState<'Top' | 'Bottom'>('Top');
   const [topMeasurements, setTopMeasurements] = useState({
@@ -62,10 +111,16 @@ export default function AddOrderScreen() {
     upper_chest: '',
     bust: '',
     waist: '',
+    front_deep: '',
+    back_deep: '',
     sleeve_length: '',
     sleeve_round: '',
     arm_hole: '',
     biceps: '',
+    dot_point: '',
+    dot_to_dot: '',
+    slit_length: '',
+    seat_round: '',
   });
   const [bottomMeasurements, setBottomMeasurements] = useState({
     length: '',
@@ -75,16 +130,23 @@ export default function AddOrderScreen() {
     ankle: '',
   });
 
+  // ALL 15 Top fields - matching exactly with add-measurement.tsx
   const topFields = [
     { key: 'full_length', label: 'Full Length' },
     { key: 'shoulder', label: 'Shoulder' },
     { key: 'upper_chest', label: 'Upper Chest' },
     { key: 'bust', label: 'Bust' },
     { key: 'waist', label: 'Waist' },
-    { key: 'sleeve_length', label: 'Sleeve' },
-    { key: 'sleeve_round', label: 'Sleeve R.' },
+    { key: 'front_deep', label: 'Front Deep' },
+    { key: 'back_deep', label: 'Back Deep' },
+    { key: 'sleeve_length', label: 'Sleeve Length' },
+    { key: 'sleeve_round', label: 'Sleeve Around' },
     { key: 'arm_hole', label: 'Arm Hole' },
     { key: 'biceps', label: 'Biceps' },
+    { key: 'dot_point', label: 'Dot Point' },
+    { key: 'dot_to_dot', label: 'Dot to Dot' },
+    { key: 'slit_length', label: 'Slit Length' },
+    { key: 'seat_round', label: 'Seat Round' },
   ];
 
   const bottomFields = [
@@ -94,6 +156,15 @@ export default function AddOrderScreen() {
     { key: 'knees', label: 'Knees' },
     { key: 'ankle', label: 'Ankle' },
   ];
+
+  // Memoized handlers to prevent re-renders
+  const handleTopMeasurementChange = useCallback((key: string, value: string) => {
+    setTopMeasurements(prev => ({ ...prev, [key]: value }));
+  }, []);
+
+  const handleBottomMeasurementChange = useCallback((key: string, value: string) => {
+    setBottomMeasurements(prev => ({ ...prev, [key]: value }));
+  }, []);
 
   useEffect(() => {
     fetchCustomers();
@@ -246,7 +317,11 @@ export default function AddOrderScreen() {
           <View style={styles.headerRight} />
         </View>
 
-        <ScrollView contentContainerStyle={styles.scrollContent}>
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="none"
+        >
           {/* Customer Selection */}
           <GlassCard style={styles.section}>
             <Text style={styles.sectionTitle}>Customer</Text>
@@ -412,28 +487,18 @@ export default function AddOrderScreen() {
                   </TouchableOpacity>
                 </View>
 
-                {/* Measurements Grid */}
+                {/* Measurements Grid - Using memoized component */}
                 <View style={styles.measurementsGrid}>
                   {(measurementCategory === 'Top' ? topFields : bottomFields).map((field) => (
-                    <View key={field.key} style={styles.measurementInput}>
-                      <Text style={styles.measurementLabel}>{field.label}</Text>
-                      <TextInput
-                        style={styles.measurementInputField}
-                        placeholder="0"
-                        placeholderTextColor={COLORS.gray}
-                        value={measurementCategory === 'Top' 
-                          ? topMeasurements[field.key as keyof typeof topMeasurements] 
-                          : bottomMeasurements[field.key as keyof typeof bottomMeasurements]}
-                        onChangeText={(v) => {
-                          if (measurementCategory === 'Top') {
-                            setTopMeasurements(prev => ({ ...prev, [field.key]: v }));
-                          } else {
-                            setBottomMeasurements(prev => ({ ...prev, [field.key]: v }));
-                          }
-                        }}
-                        keyboardType="numeric"
-                      />
-                    </View>
+                    <MeasurementInputField
+                      key={field.key}
+                      fieldKey={field.key}
+                      label={field.label}
+                      value={measurementCategory === 'Top' 
+                        ? topMeasurements[field.key as keyof typeof topMeasurements] 
+                        : bottomMeasurements[field.key as keyof typeof bottomMeasurements]}
+                      onChange={measurementCategory === 'Top' ? handleTopMeasurementChange : handleBottomMeasurementChange}
+                    />
                   ))}
                 </View>
               </View>
@@ -917,23 +982,5 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: SPACING.sm,
-  },
-  measurementInput: {
-    width: '31%',
-  },
-  measurementLabel: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: COLORS.gray,
-    marginBottom: 4,
-  },
-  measurementInputField: {
-    backgroundColor: COLORS.cream,
-    borderRadius: BORDER_RADIUS.sm,
-    padding: SPACING.sm,
-    fontSize: 14,
-    borderWidth: 1,
-    borderColor: COLORS.lightGray,
-    textAlign: 'center',
   },
 });
