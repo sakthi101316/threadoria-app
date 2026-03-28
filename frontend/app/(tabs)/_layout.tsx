@@ -4,9 +4,10 @@ import { MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import { COLORS } from '../../src/constants/theme';
 import { useAuth } from '../../src/context/AuthContext';
 import { View, ActivityIndicator } from 'react-native';
+import { FloatingChatButton } from '../../src/components/FloatingChatButton';
 
 export default function TabsLayout() {
-  const { isLoading } = useAuth();
+  const { isLoading, isAuthenticated } = useAuth();
 
   // Only show loading while initial auth check is happening
   if (isLoading) {
@@ -19,7 +20,8 @@ export default function TabsLayout() {
 
   // Always render tabs - the logout button handles navigation directly
   return (
-    <Tabs
+    <View style={{ flex: 1 }}>
+      <Tabs
       screenOptions={{
         tabBarActiveTintColor: COLORS.primary,
         tabBarInactiveTintColor: COLORS.gray,
@@ -112,5 +114,8 @@ export default function TabsLayout() {
         }}
       />
     </Tabs>
+    {/* Floating AI Chat Button */}
+    {isAuthenticated && <FloatingChatButton />}
+    </View>
   );
 }
