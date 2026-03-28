@@ -89,6 +89,8 @@ class TopMeasurements(BaseModel):
     upper_chest: Optional[float] = 0
     bust: Optional[float] = 0
     waist: Optional[float] = 0
+    front_deep: Optional[float] = 0
+    back_deep: Optional[float] = 0
     sleeve_length: Optional[float] = 0
     sleeve_round: Optional[float] = 0
     arm_hole: Optional[float] = 0

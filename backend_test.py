@@ -10,7 +10,7 @@ import sys
 from datetime import datetime, timedelta
 
 # Backend URL from frontend/.env
-BASE_URL = "https://fittracker-172.preview.emergentagent.com/api"
+BASE_URL = "https://boutiquefit-staging.preview.emergentagent.com/api"
 
 class BoutiqueFitTester:
     def __init__(self):

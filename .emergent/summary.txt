@@ -1,214 +1,202 @@
 <analysis>
-**original_problem_statement**: The initial goal was to create a mobile application, **Maahis SmartBook**, for a single boutique. The project pivoted to become a multi-tenant public application named **BoutiqueFit**.
+**original_problem_statement**: The initial goal was to create a multi-tenant boutique management system named **BoutiqueFit**. The user has made numerous requests for features and bug fixes, with the most critical and persistent problems being a non-functional logout and incomplete data isolation between boutique accounts. The user has also requested several UI/UX improvements, integration of Twilio for OTP, and recently, a temporary restriction on login access. The ultimate goal is to have a stable, fully functional, and secure application ready for deployment.
 
 **PRODUCT REQUIREMENTS (Current):**
 -   **App Name**: BoutiqueFit
 -   **Purpose**: A multi-boutique management system.
 -   **Core Features**:
     -   Multi-tenant user registration and login.
-    -   Customer and order management, now tied to a specific user (boutique).
-    -   Data isolation between different boutique accounts.
-    -   Store measurements with reference photos.
+    -   **Strict data isolation**: All data (customers, orders, measurements) must be strictly segregated per boutique account with no overlap.
+    -   **Auto-Logout**: Since a functional logout button could not be implemented, the app must automatically log out when closed, sent to the background, or after 1 hour of inactivity. The manual logout button has been removed.
+    -   Customer and order management tied to a specific boutique.
+    -   Store measurements with reference photos (viewable in full-screen).
     -   Track payments and order status.
-    -   Store material photos.
-    -   Edit functionality for existing orders and measurements.
-    -   Backup data feature.
-    -   Automated WhatsApp reminders for payments and deliveries, personalized with the boutique's name.
+    -   If measurements are added/edited via the Add Order screen, they must also update the core customer measurement record.
+    -   Success pop-up messages should appear after creating a new customer or order.
+    -   Automated WhatsApp reminders for payments and deliveries.
+    -   **Temporary Login Restriction**: Access is restricted to a single hardcoded mobile number and PIN. All other login attempts should be blocked.
 -   **UI/UX**:
-    -   Dashboard showing key stats (pending orders, due today, etc.) which are clickable to filter the order list.
-    -   Display the logged-in boutique's name on the dashboard.
-    -   A dedicated, functional logout button.
-    -   Responsive design that works on mobile screens without content being cut off.
-    -   A smooth, non-disruptive keyboard experience on input forms.
+    -   Dashboard showing key stats.
+    -   Responsive design without content being cut off.
+    -   A smooth, non-disruptive keyboard experience on input forms (no-re-renders causing focus loss).
+    -   The QR code payment feature has been removed.
+-   **Integrations**:
+    -   Twilio for sending real OTPs during registration.
+    -   OpenAI Whisper for voice-to-text, with improved hallucination filtering.
 
 **User's preferred language**: English. The next agent MUST respond in English.
 
 **what currently exists?**
-The project is a multi-tenant Expo/FastAPI application. The agent has implemented several features requested by the user, including edit functionality for orders and measurements, a redesigned home screen with a boutique name display and clickable stat cards, and a mock backup feature. The backend logic for associating customers and orders with a specific  has been implemented to support data isolation. However, the application is plagued by critical, recurring bugs, most notably a non-functional logout process and incomplete data filtering, which breaks the multi-tenant model. The agent has also addressed several UI/UX issues like screen maximization and keyboard dismissal problems.
+The application is a multi-tenant Expo/FastAPI app. The agent successfully completed a comprehensive security audit and implemented strict data isolation across all backend endpoints, which was a critical task. The persistent and frustrating logout bug was resolved by removing the logout button entirely and implementing an auto-logout mechanism when the app is backgrounded or closed, per the user's new request.
+
+Several other user-requested fixes were implemented: the keyboard dismissal bug on the measurement page was fixed, a full-screen image viewer was added for order photos, the QR code feature was removed, and Twilio credentials were integrated for live OTPs.
+
+However, the project is currently blocked by a critical deployment error.
 
 **Last working item**:
-    - Last item agent was working: The agent was simultaneously trying to fix two critical, user-reported issues:
-        1.  **Logout Not Redirecting:** After numerous failed attempts using 's navigation tools, the agent implemented a brute-force solution using  to trigger a full application reload on logout.
-        2.  **Data Segregation Failure:** The user reported seeing the same customers across different boutique accounts. The agent identified that the  backend endpoint was not filtering by . A fix was implemented on both the backend endpoint and the frontend API call to enforce this filtering.
-    - Status: USER VERIFICATION PENDING
+    - Last item agent was working: The agent was tasked with resolving a deployment failure. The user provided build logs from the emergent deployments system. The agent correctly identified that the build process was failing due to missing npm packages in the deployment environment, specifically .
+    - Status: IN PROGRESS
     - Agent Testing Done: N
-    - Which testing method agent to use? both. The agent should first use the frontend testing agent with a screenshot tool to verify the logout functionality. Then, to test data isolation, the agent needs to register two separate users, add distinct customers to each, and verify that logging in as one user only shows that user's customers.
+    - Which testing method agent to use? This is a build/deployment issue, not a runtime one. The agent needs to analyze  and potentially add missing dependencies to fix the build. After a code fix, the only way to test is to re-run the deployment process, which is outside the agent's direct control. The goal is to provide a code change that resolves the errors seen in the logs.
     - User Testing Done: N
 
 **All Pending/In progress Issue list**:
-  - Issue 1: Logout button does not redirect to the login page (P0)
-  - Issue 2: Data is not properly isolated between different user accounts (P0)
-  - Issue 3: Due Today filter on the dashboard shows all pending orders (P1)
-  - Issue 4: Keyboard dismisses on every keystroke on the signup page (P2)
+  - Issue 1: Android build for deployment is failing (P0)
+  - Issue 2: Success pop-ups for new customer/order are not being seen by the user (P1)
+  - Issue 3: Measurements added/edited during order creation do not update the main customer record (P1)
   
   **Issues Detail**:
-  - **Issue 1: Logout button does not redirect to the login page (P0)**
-     - Attempted fixes: The agent tried multiple solutions, including , , implementing a  hook in , and rewriting . All failed. The last attempt was a brute-force method using  in the logout handler in . This is a non-standard, disruptive way to handle logout and its effectiveness is unverified.
+  - **Issue 1: Android build for deployment is failing (P0)**
+     - Attempted fixes: The agent correctly identified a previous build error was due to a missing  and installed it. However, the latest deployment log shows a new, more fundamental error.
      - Next debug checklist:
-        1.  Verify if the  fix works. Click the logout button and observe if the app reloads to the login screen.
-        2.  If it fails, the root cause is likely in the navigation state management. Re-examine . The auth-based routing logic introduced in a previous attempt was the correct architectural approach but was likely implemented incorrectly or reverted. The goal is to have  be the single source of truth for auth navigation.
-        3.  The  function in  should *only* clear the token from . The  hook in  should detect the change in the  state and automatically navigate to the login screen ().
-     - Why fix this issue and what will be achieved with the fix? This is a fundamental feature of any authenticated app. Fixing it is critical for user trust and basic usability. The user is extremely frustrated by this recurring bug.
+        1.  Analyze the build logs provided by the user in message #550. The key errors are:
+            - 
+            - 
+            - 
+        2.  The root cause is that  is a critical dev dependency required by Expo's build system (EAS Build) to process plugins, but it seems to be missing during the build process.
+        3.  **Action**: Explicitly add  to the  in  using yarn add v1.22.22
+[1/4] Resolving packages...
+[2/4] Fetching packages...
+[3/4] Linking dependencies...
+info Visit https://yarnpkg.com/en/docs/cli/add for documentation about this command.. This will ensure it is installed before other plugins are evaluated.
+     - Why fix this issue and what will be achieved with the fix? The application cannot be deployed or delivered to the user without a successful build. This is the highest priority blocker.
+     - Status:  IN PROGRESS
+     - Is recurring issue? N
+     - Should Test frontend/backend/both after fix? Neither. The fix can only be verified by attempting deployment again.
+     - Blocked on other issue: None
+
+  - **Issue 2: Success pop-ups for new customer/order are not being seen by the user (P1)**
+     - Attempted fixes: The agent verified that  calls exist in both  and . The agent added  statements for debugging but never got confirmation from the user if the issue was resolved or if the logs showed anything.
+     - Next debug checklist:
+        1.  Review  and 's  functions.
+        2.  The  is inside a  block. It's possible the API call is succeeding, but navigation () happens before the Alert has time to render, or an error is being thrown after the API call but before the alert.
+        3.  Wrap the navigation logic in the 's  callback to ensure the user sees the alert first. Example: 
+     - Why fix this issue and what will be achieved with the fix? Provides essential user feedback, confirming that their data has been saved successfully.
      - Status:  IN PROGRESS
      - Is recurring issue? Y
      - Should Test frontend/backend/both after fix? Frontend
      - Blocked on other issue: None
 
-  - **Issue 2: Data is not properly isolated between different user accounts (P0)**
-     - Attempted fixes: The agent correctly identified that  was not filtering by . The agent updated the backend endpoint in  to require a  and updated the frontend API call in  to pass it.
+  - **Issue 3: Measurements added/edited during order creation do not update the main customer record (P1)**
+     - Attempted fixes: None. This requirement was stated by the user in message #311 but was missed by the agent.
      - Next debug checklist:
-        1.  **This fix is incomplete.** The agent only fixed the  endpoint. A full audit is required.
-        2.  Check **ALL** data-fetching endpoints in : , , , , etc. Every endpoint that returns user-specific data must accept a  from the authenticated user and include a  clause in its MongoDB query.
-        3.  Update the corresponding frontend functions in  and the calling components (, , etc.) to pass the .
-     - Why fix this issue and what will be achieved with the fix? This is a critical security and privacy failure. Without this fix, every user can see every other user's data, making the multi-tenant application completely unusable and unsafe.
-     - Status:  IN PROGRESS
+        1.  Locate the  function in .
+        2.  After the  call successfully returns, make a second API call to update the customer's measurements.
+        3.  This will require a new backend endpoint, e.g., , that takes the measurement data and updates the corresponding customer document.
+        4.  Update the frontend  service with a function for this new endpoint.
+     - Why fix this issue and what will be achieved with the fix? This is a key workflow improvement for the user, preventing them from having to enter measurement data twice and ensuring the customer record is always up-to-date.
+     - Status:  NOT STARTED
      - Is recurring issue? N
      - Should Test frontend/backend/both after fix? Both
      - Blocked on other issue: None
-
-  - **Issue 3: Due Today filter on the dashboard shows all pending orders (P1)**
-     - Attempted fixes: The agent updated the  handler for the Due Today stat card in  to navigate to  with a  parameter. The  component was updated to read this parameter and apply a filter.
-     - Next debug checklist:
-        1.  Examine the filtering logic within  in .
-        2.  The filtering is done on the frontend after fetching all orders. The date comparison logic for due today might be incorrect (e.g., timezone issues, not accounting for time of day).
-        3.  For better performance and accuracy, this filtering should be done on the backend. Modify the  endpoint in  to accept an optional  query parameter (, ) and apply the date-based query directly in MongoDB.
-     - Why fix this issue and what will be achieved with the fix? This is a core functional requirement for the dashboard, allowing users to quickly see their most urgent tasks.
-     - Status:  IN PROGRESS
-     - Is recurring issue? N
-     - Should Test frontend/backend/both after fix? Both
-     - Blocked on other issue: None
-
-  - **Issue 4: Keyboard dismisses on every keystroke on the signup page (P2)**
-     - Attempted fixes: The agent fixed a similar issue on the  page by moving a component out of the render function and adding  to the .
-     - Next debug checklist:
-        1.  The user specifically mentioned the **signup page** (). Verify if the same fix has been applied there.
-        2.  Inspect  and ensure the  has the  prop.
-        3.  Check for any components being defined inside the  render function, which would cause them to re-render and lose focus.
-     - Why fix this issue and what will be achieved with the fix? This bug makes the registration process extremely frustrating and nearly impossible, preventing new user onboarding.
-     - Status:  IN PROGRESS
-     - Is recurring issue? Y
-     - Should Test frontend/backend/both after fix? Frontend
-     - Blocked on other issue: None
-
-**In progress Task List**:
-- None
 
 **Upcoming and Future Tasks**
     Upcoming Tasks:
-    - P1: Voice transcription is hallucinating. The agent removed the  parameter from the Whisper API call, but the root cause (e.g., audio format, chunking, prompt) has not been fully diagnosed. The feature is still unreliable.
-    - P2: Implement Global Voice Search on the home page. This was an original requirement that has not been started.
-    - P3: Implement the Welcome Audio chime on login. This has been planned but never implemented.
-
+    - P0: Remove the temporary hardcoded login restriction from  once the user requests to go public again.
+    - P1: Re-implement a stable, functional logout button. The current auto-logout is a temporary workaround for a deeply rooted navigation issue.
+    - P2: Global Voice Search on the home page.
+    - P3: Welcome Audio chime on login.
+    
     Future Tasks:
-    - Implement a real payment gateway integration for QR code payments, replacing the current mock polling system.
-    - Implement a robust backup system. The current backend endpoint is a placeholder. This would involve generating a data dump (e.g., JSON, CSV) and emailing it to the user.
+    - Implement a real payment gateway integration.
+    - Implement a robust data backup system (the current one is a placeholder).
 
 **Completed work in this session**
-- **Feature: Edit Functionality**:
-  - Created  and  screens.
-  - Added Edit buttons on the customer detail and order detail pages.
-- **Feature: Inline Measurements**:
-  - Integrated a collapsible measurement entry section directly into the  screen.
-- **Feature: Data Backup (Mock)**:
-  - Added a Backup Data button and modal to the settings screen.
-  - Created a placeholder  endpoint on the backend.
-- **Bugfix: Data Association on Creation**:
-  - Fixed a critical architectural flaw where  was not being saved when creating customers and orders. This was a prerequisite for data isolation.
-- **Bugfix: WhatsApp Personalization**:
-  - Updated backend WhatsApp message functions to fetch and use the boutique's name instead of the static BoutiqueFit or Your Boutique.
+- **Critical Security Fix: Data Isolation Implemented**: Audited and fixed all backend endpoints (, ,  for customers, orders, etc.) to enforce strict  filtering, preventing data leakage between boutiques.
+- **Logout Workaround**: Removed the non-functional logout button and implemented an auto-logout feature on app background/close using .
 - **UI/UX Fixes**:
-  - **Home Screen Redesign**: Removed voice search, added the boutique name, made stat cards clickable for filtering.
-  - **Responsive Design**: Fixed maximized screen issue on all main tabbed screens (, , , , ) by using  correctly.
-  - **Keyboard Bug**: Fixed the keyboard auto-dismissal issue on the  page.
-- **Environment: Tunnel Issue Resolved**:
-  - Resolved a persistent  error after forking by correcting the  in the  file.
+  - **Keyboard Bug Fixed**: Resolved the keyboard auto-dismissal issue on the measurement input page by moving the input component outside the render function.
+  - **Full-Screen Image Viewer**: Added a modal to view order material photos in full-screen.
+  - **QR Code Removed**: Completely removed the QR code payment section from the billing tab as requested.
+- **Voice Input Improved**:
+  - Renamed Sleeve Round to Sleeve Around to improve voice recognition.
+  - Added more server-side filters to reduce hallucinated text from Whisper.
+- **Backend & Integrations**:
+  - **Live OTP**: Successfully integrated the user's Twilio credentials into the backend for sending SMS OTPs.
+  - **Temporary Login Restriction**: Implemented a server-side check to restrict login to a specific user, as requested.
+- **Deployment & Build Fixes**:
+  - Resolved an Expo Go preview error by installing the  dependency.
 
 **Earlier issues found/mentioned but not fixed**
-   - Issue 1: The voice transcription for measurements is still unreliable and occasionally hallucinates incorrect text, despite the OpenAI key being valid. The agent removed an incorrect language parameter but did not perform a deep diagnosis of the audio data being sent.
-   - Issue 2: The global voice search feature for the home page, a recurring user request, has not been implemented.
-   - Issue 3: The welcome audio chime on login has not been implemented.
+   - Issue 1: Measurements added via the Add Order screen are not synced back to the main customer profile.
+   - Issue 2: User is not seeing success pop-up alerts after creating customers or orders, even though the code is present.
 
 **Known issue recurrence from previous fork**
-  - Issue recurrence in previous fork: Voice features breaking, branding inconsistencies (logos), and navigation/login flow issues.
-  - Recurrence count: The login/logout flow has been a recurring problem throughout this and previous sessions.
-  - Status: IN PROGRESS
+  - **Logout Functionality**: This was the most recurring and problematic issue of the entire project. After dozens of failed attempts, the feature was removed in favor of an auto-logout workaround. The root cause is likely a complex interaction between 's nested navigation state and the .
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
-- **Frontend**: React Native, Expo, Expo Router, TypeScript
-- **Backend**: Python, FastAPI, Pydantic, Motor (async MongoDB)
+- **Frontend**: React Native, Expo, Expo Router v3, TypeScript
+- **Backend**: Python, FastAPI, Motor (async MongoDB)
 - **Database**: MongoDB
-- **Architecture**: Multi-tenant architecture. Data isolation is *intended* via  but is currently incompletely implemented.
-- **Authentication**: JWT token-based, stored in . Login with mobile + PIN. Logout is critically broken.
-- **Navigation**:  with a file-based system. Auth-based navigation is handled in  but is not functioning correctly.
+- **Architecture**: Multi-tenant with strict data isolation enforced at the API level via .
+- **Authentication**: JWT token-based. Login is currently hardcoded on the backend to a single user. Logout is handled automatically by clearing state when the app is backgrounded/closed via the  API.
+- **Deployment**: Failing due to dependency issues in the EAS Build environment.
 
 **key DB schema**
   - **users**: 
-  - **customers**:  (user_id is now being added on creation)
-  - **orders**:  (user_id is now being added on creation)
-
-**changes in tech stack**
--  was added to the project in a last-ditch effort to fix the logout functionality by force-reloading the app.
+  - **customers**:  (All endpoints now verify )
+  - **orders**:  (All endpoints now verify )
+  - **measurements**:  (Indirectly isolated via customer, but all access endpoints now verify the owner ).
 
 **All files of reference**
-- **/app/frontend/src/context/AuthContext.tsx**: The epicenter of the login/logout problems. It has been rewritten multiple times.
-- **/app/frontend/app/_layout.tsx**: The root navigator. Its role in handling auth state changes is critical to fixing the logout issue.
-- **/app/frontend/app/(tabs)/index.tsx**: Contains the logout button. The  handler has been changed multiple times.
-- **/app/backend/server.py**: Contains all backend logic. Needs to be audited to ensure  filtering is applied to all data-fetching endpoints, not just .
-- **/app/frontend/app/register.tsx**: The user reported a keyboard dismissal bug on this page that needs to be fixed.
+- **/app/frontend/package.json**: The primary file to edit to fix the current deployment blocker.
+- **/app/backend/server.py**: Contains the mission-critical data isolation logic and the temporary hardcoded login restriction.
+- **/app/frontend/src/context/AuthContext.tsx**: Contains the new auto-logout logic using .
+- **/app/frontend/app/add-measurement.tsx**: The keyboard bug was fixed here.
+- **/app/frontend/app/order/[id].tsx**: The full-screen image viewer was added here.
+- **/app/frontend/app/(tabs)/billing.tsx**: The QR code feature was removed from here.
 
 **Critical Info for New Agent**
-- **User is Extremely Frustrated**: The user has repeatedly complained about wasted credits and the agent's inability to fix core issues, especially the logout bug. Building trust is paramount. Do not attempt speculative fixes. Formulate a clear plan, explain it, and execute it precisely.
-- **Logout is a Quagmire**: The logout functionality is the #1 problem. Do not repeat the previous agent's mistakes of trying random  methods. The correct, robust solution involves a clean separation of concerns:  manages the token state in , and  uses a  hook to watch this state and navigate accordingly. The  is a hack and should be replaced.
-- **Data Isolation is INCOMPLETE**: The previous agent only fixed the customer list. You MUST audit and fix every single data endpoint (, , etc.) to filter by the logged-in user's . This is a critical security task.
-- **Verify, Don't Assume**: The user has reported issues that the agent thought were fixed. After implementing a fix, clearly state how the user (or you) can verify it. For example, To test the data fix, please log in with two different accounts and confirm you see different customer lists.
+- **PRIORITY #1: FIX DEPLOYMENT.** The user is ready to deploy but is blocked by a build error. The error logs clearly point to a missing  dependency. You must add this to  in .
+- **User Frustration is High**: The user has spent a lot of time and credits, especially on the logout issue. Prioritize clear communication and effective, stable fixes. Do not re-introduce the logout button unless explicitly asked, as it has been a major source of failure.
+- **Login is Temporarily Restricted**: The backend () has a hardcoded check that only allows mobile  with PIN  to log in. Be aware of this during testing. You will need to remove this block of code when the user wants to open the app to the public again.
+- **Data Isolation is Mission-Critical**: The previous agent did a full audit and secured all endpoints. Treat this logic as sacred. Any new data-related feature must undergo the same rigorous  validation.
+- **Missed Requirements**: The user is waiting for two things that were overlooked: syncing measurements from new orders back to the customer profile, and fixing the non-appearing success popups. Address these after the deployment issue is resolved.
 
 **documents created in this job**
-- None
+- None.
 
-**Last 10 User Messages and any pending HUMAN messages**
-- 10. **User**: Still same logout issue. Don't waste credits. (IN PROGRESS)
-- 9. **User**: Logout isn't redirecting. (IN PROGRESS)
-- 8. **User**: Logout is not immediate, Due Today filter is broken, asks about backup feature. (PARTIALLY RESOLVED)
-- 7. **User**: Screen size is good, but logout is broken. Remove voice from home. Make stat cards clickable. Boutique name missing on home. Other pages are still maximized. (PARTIALLY RESOLVED)
-- 6. **User**: WhatsApp reminder says Your Boutique, logout button is overlapped, keyboard keeps dismissing on signup/measurement pages. (PARTIALLY RESOLVED)
-- 5. **User**: Screenshot shows font is too small, screen is maximized, logout button is unusable, and voice recognition is giving garbage output. (PARTIALLY RESOLVED)
-- 4. **User**: Add front deep & back deep to measurements. Screen is maximized. Logout button doesn't work. WhatsApp reminder uses app name instead of boutique name. (PARTIALLY RESOLVED)
-- 3. **User**: Tunnel issue () persists even after reinstalling Expo Go. (RESOLVED)
-- 2. **User**: Getting  error when scanning QR code. (RESOLVED)
-- 1. **User**: Expo Go isn't showing updates. Mobile screen is maximized. QR payment should auto-update. WhatsApp reminders need to be implemented. (PARTIALLY RESOLVED)
+**Last 10 User Messages and any pending HUMAN messages** 
+ - 10. User provides deployment logs and asks agent to fix the build errors. (IN PROGRESS)
+ - 9. User asks for a complete system check before deployment. (RESOLVED)
+ - 8. User requests to change the hardcoded login credentials. (RESOLVED)
+ - 7. User reports being unable to see the preview in Expo Go. (RESOLVED)
+ - 6. User requests to restrict login to a single, hardcoded user for internal testing. (RESOLVED)
+ - 5. User provides Twilio credentials for OTP integration. (RESOLVED)
+ - 4. User reports more UI/UX bugs: rename sleeve round, fix keyboard on measurement page, and add full-screen photo view. (RESOLVED)
+ - 3. User reports issues with voice input, keyboard, measurement syncing, and asks to remove the QR code feature. (PARTIALLY RESOLVED - measurement sync missed)
+ - 2. User gives up on the logout button and suggests an alternative: auto-logout on app close/idle. (RESOLVED - WORKAROUND IMPLEMENTED)
+ - 1. User repeatedly reports that logout is not working, causing refresh loops or blank screens. (RESOLVED - WORKAROUND IMPLEMENTED)
 
 **Project Health Check:**
 - **Broken**:
-    - Logout Functionality
-    - Data Isolation (incomplete implementation)
-    - Due Today Order Filtering
-    - Voice Measurement Transcription (unreliable)
-    - Keyboard behavior on the registration page
+    - Android Deployment Build
 - **Mocked**:
-    - Data Backup Feature (UI exists, backend is a placeholder)
-    - Real-time Payment Updates (uses basic polling, not a proper webhook/callback)
+    - Data Backup Feature
+    - Real-time Payment Updates (uses basic polling)
+- **Degraded**:
+    - **Logout**: Feature completely removed and replaced with a backgrounding workaround. This is not ideal for user experience but was necessary due to persistent bugs.
 
 **3rd Party Integrations**
--   **OpenAI Whisper**: Used for voice-to-text. Requires a User-provided API Key. The key is valid, but the transcription quality is poor/unreliable.
--   **Twilio**: Used for sending SMS OTPs during registration.
+-   **OpenAI Whisper**: Used for voice-to-text. Requires a User-provided API Key.
+-   **Twilio**: Used for sending SMS OTPs. Configured with user-provided Account SID, Auth Token, and Phone Number.
 
 **Testing status**
-  - Testing agent used after significant changes: NO
-  - Troubleshoot agent used after agent stuck in loop: YES (for the ngrok tunnel issue)
-  - Test files created: None.
-  - Known regressions: The logout functionality has been repeatedly broken. Data isolation was a major regression discovered late in the session.
+  - Testing agent used after significant changes: YES (for both backend data isolation and frontend tabs)
+  - Troubleshoot agent used after agent stuck in loop: YES (multiple times for the logout issue)
+  - Test files created: None
+  - Known regressions: The entire manual logout functionality was removed as it could not be stabilized.
 
 **Credentials to test flow:**
-- Register two new, separate user accounts via the registration screen to test data isolation.
-- Use the credentials of these new accounts to log in and test functionality.
+- **Temporary Restricted Login:**
+- **Mobile Number:** 
+- **PIN:** 
+- **Note:** This is enforced in . Registration of new users is still possible, but they will be blocked from logging in.
 
 **What agent forgot to execute**
-- The agent did not perform a complete audit of all data-fetching endpoints to ensure  filtering was applied, stopping after only fixing .
-- The agent did not implement the Global Voice Search feature requested multiple times.
-- The agent did not implement the Welcome Audio chime on login.
-- The agent did not verify if the keyboard fix was applied to the  page, only .
-
+- The agent did not implement the user's request to update a customer's main measurement profile when new measurements are added via the Add Order screen.
+- The agent did not fully resolve or confirm the fix for the user not seeing success pop-up messages after creating a customer or order. The code was verified to be present, but the user's issue was not confirmed as solved.
 </analysis>

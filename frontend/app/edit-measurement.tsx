@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, memo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -24,6 +24,62 @@ import { GlassCard } from '../src/components/GlassCard';
 import { GoldButton } from '../src/components/GoldButton';
 import { api } from '../src/services/api';
 
+// Memoized input component OUTSIDE the main component to prevent re-renders
+const MeasurementInputField = memo(({ 
+  fieldKey, 
+  label, 
+  value, 
+  onChange,
+  isHighlighted 
+}: { 
+  fieldKey: string;
+  label: string; 
+  value: string; 
+  onChange: (key: string, value: string) => void;
+  isHighlighted: boolean;
+}) => {
+  return (
+    <View style={inputStyles.measurementInput}>
+      <Text style={inputStyles.inputLabel}>{label}</Text>
+      <TextInput
+        style={[inputStyles.input, isHighlighted && inputStyles.inputHighlighted]}
+        placeholder="0"
+        placeholderTextColor={COLORS.gray}
+        value={value}
+        onChangeText={(v) => onChange(fieldKey, v)}
+        keyboardType="numeric"
+      />
+    </View>
+  );
+});
+
+const inputStyles = StyleSheet.create({
+  measurementInput: {
+    width: '31%',
+    marginBottom: SPACING.sm,
+  },
+  inputLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: COLORS.gray,
+    marginBottom: 4,
+  },
+  input: {
+    backgroundColor: COLORS.cream,
+    borderRadius: BORDER_RADIUS.sm,
+    padding: SPACING.sm,
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: COLORS.lightGray,
+    textAlign: 'center',
+  },
+  inputHighlighted: {
+    borderColor: COLORS.success,
+    borderWidth: 2,
+    backgroundColor: COLORS.success + '20',
+  },
+});
+
 // Field name mappings for voice recognition
 const FIELD_MAPPINGS: { [key: string]: string } = {
   'full length': 'full_length',
@@ -38,11 +94,16 @@ const FIELD_MAPPINGS: { [key: string]: string } = {
   'sleeve length': 'sleeve_length',
   'sleeve': 'sleeve_length',
   'sleeves': 'sleeve_length',
+  'sleeve around': 'sleeve_round',
   'sleeve round': 'sleeve_round',
   'arm hole': 'arm_hole',
   'armhole': 'arm_hole',
   'biceps': 'biceps',
   'bicep': 'biceps',
+  'front deep': 'front_deep',
+  'front': 'front_deep',
+  'back deep': 'back_deep',
+  'back': 'back_deep',
   'dot point': 'dot_point',
   'dot': 'dot_point',
   'dot to dot': 'dot_to_dot',
@@ -81,13 +142,15 @@ export default function EditMeasurementScreen() {
   const isListeningRef = useRef(false);
   const chunkIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Top measurements
+  // Top measurements - including front_deep and back_deep
   const [topMeasurements, setTopMeasurements] = useState({
     full_length: '',
     shoulder: '',
     upper_chest: '',
     bust: '',
     waist: '',
+    front_deep: '',
+    back_deep: '',
     sleeve_length: '',
     sleeve_round: '',
     arm_hole: '',
@@ -113,8 +176,10 @@ export default function EditMeasurementScreen() {
     { key: 'upper_chest', label: 'Upper Chest' },
     { key: 'bust', label: 'Bust' },
     { key: 'waist', label: 'Waist' },
+    { key: 'front_deep', label: 'Front Deep' },
+    { key: 'back_deep', label: 'Back Deep' },
     { key: 'sleeve_length', label: 'Sleeve Length' },
-    { key: 'sleeve_round', label: 'Sleeve Round' },
+    { key: 'sleeve_round', label: 'Sleeve Around' },
     { key: 'arm_hole', label: 'Arm Hole' },
     { key: 'biceps', label: 'Biceps' },
     { key: 'dot_point', label: 'Dot Point' },
@@ -238,6 +303,12 @@ export default function EditMeasurementScreen() {
       const response = await fetch(uri);
       const blob = await response.blob();
       
+      // Skip processing if audio is too short (likely silence)
+      if (blob.size < 5000) {
+        setStatusText('Listening...');
+        return;
+      }
+      
       const base64Audio = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => {
@@ -249,18 +320,23 @@ export default function EditMeasurementScreen() {
         reader.readAsDataURL(blob);
       });
       
-      if (base64Audio && base64Audio.length > 1000) {
+      if (base64Audio && base64Audio.length > 2000) {
         const result = await api.transcribeVoice(base64Audio, 'm4a');
         
-        if (result.success && result.text && result.text.trim()) {
+        if (result.success && result.text && result.text.trim() && result.text.trim().length > 2) {
           const newText = result.text.trim();
-          setTranscribedText(prev => {
-            const combined = prev ? `${prev} ${newText}` : newText;
-            return combined.slice(-150);
-          });
-          const filled = parseAndFillMeasurements(newText);
-          if (filled) {
-            setStatusText('✓ Field filled!');
+          // Ignore common noise/silence transcriptions
+          if (!['', '.', '..', '...', 'you', 'the', 'a', 'hmm', 'uh', 'um'].includes(newText.toLowerCase())) {
+            setTranscribedText(prev => {
+              const combined = prev ? `${prev} ${newText}` : newText;
+              return combined.slice(-150);
+            });
+            const filled = parseAndFillMeasurements(newText);
+            if (filled) {
+              setStatusText('✓ Field filled!');
+            } else {
+              setStatusText('Listening...');
+            }
           } else {
             setStatusText('Listening...');
           }
@@ -377,6 +453,15 @@ export default function EditMeasurementScreen() {
     }
   };
 
+  // Memoized handler for measurement changes
+  const handleTopMeasurementChange = useCallback((key: string, value: string) => {
+    setTopMeasurements(prev => ({ ...prev, [key]: value }));
+  }, []);
+
+  const handleBottomMeasurementChange = useCallback((key: string, value: string) => {
+    setBottomMeasurements(prev => ({ ...prev, [key]: value }));
+  }, []);
+
   const handleSubmit = async () => {
     if (isListening) {
       await stopListening();
@@ -412,28 +497,6 @@ export default function EditMeasurementScreen() {
     } finally {
       setSaving(false);
     }
-  };
-
-  const MeasurementInput = ({ field, value, onChange }: { 
-    field: { key: string; label: string }; 
-    value: string; 
-    onChange: (v: string) => void 
-  }) => {
-    const isHighlighted = lastFilledField === field.key;
-    
-    return (
-      <View style={styles.measurementInput}>
-        <Text style={styles.inputLabel}>{field.label}</Text>
-        <TextInput
-          style={[styles.input, isHighlighted && styles.inputHighlighted]}
-          placeholder="0"
-          placeholderTextColor={COLORS.gray}
-          value={value}
-          onChangeText={onChange}
-          keyboardType="numeric"
-        />
-      </View>
-    );
   };
 
   if (loading) {
@@ -473,6 +536,7 @@ export default function EditMeasurementScreen() {
         <ScrollView 
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="none"
         >
           {/* Category Toggle */}
           <View style={styles.categoryToggle}>
@@ -512,6 +576,9 @@ export default function EditMeasurementScreen() {
             <Text style={styles.voiceInstructions}>
               Say: "Full length 42, shoulder 14, bust 36"
             </Text>
+            <Text style={styles.voiceNote}>
+              Fields fill every 3 seconds as you speak
+            </Text>
             
             <TouchableOpacity
               style={styles.mainVoiceButton}
@@ -549,19 +616,15 @@ export default function EditMeasurementScreen() {
             <Text style={styles.sectionTitle}>{category} Measurements (inches)</Text>
             <View style={styles.measurementsGrid}>
               {(category === 'Top' ? topFields : bottomFields).map((field) => (
-                <MeasurementInput
+                <MeasurementInputField
                   key={field.key}
-                  field={field}
+                  fieldKey={field.key}
+                  label={field.label}
                   value={category === 'Top' 
                     ? topMeasurements[field.key as keyof typeof topMeasurements] 
                     : bottomMeasurements[field.key as keyof typeof bottomMeasurements]}
-                  onChange={(v) => {
-                    if (category === 'Top') {
-                      setTopMeasurements(prev => ({ ...prev, [field.key]: v }));
-                    } else {
-                      setBottomMeasurements(prev => ({ ...prev, [field.key]: v }));
-                    }
-                  }}
+                  onChange={category === 'Top' ? handleTopMeasurementChange : handleBottomMeasurementChange}
+                  isHighlighted={lastFilledField === field.key}
                 />
               ))}
             </View>
@@ -694,7 +757,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.gray,
     textAlign: 'center',
+  },
+  voiceNote: {
+    fontSize: 12,
+    color: COLORS.success,
+    textAlign: 'center',
     marginBottom: SPACING.md,
+    fontWeight: '600',
   },
   mainVoiceButton: {
     marginBottom: SPACING.md,
@@ -746,29 +815,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: SPACING.sm,
-  },
-  measurementInput: {
-    width: '31%',
-  },
-  inputLabel: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: COLORS.gray,
-    marginBottom: 4,
-  },
-  input: {
-    backgroundColor: COLORS.cream,
-    borderRadius: BORDER_RADIUS.sm,
-    padding: SPACING.sm,
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: COLORS.lightGray,
-    textAlign: 'center',
-  },
-  inputHighlighted: {
-    borderColor: COLORS.success,
-    borderWidth: 2,
-    backgroundColor: COLORS.success + '20',
   },
   section: {
     marginBottom: SPACING.md,
