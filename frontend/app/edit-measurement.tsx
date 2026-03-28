@@ -12,6 +12,7 @@ import {
   Platform,
   Animated,
   ActivityIndicator,
+  Keyboard,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -23,62 +24,6 @@ import { COLORS, SPACING, BORDER_RADIUS, SHADOWS } from '../src/constants/theme'
 import { GlassCard } from '../src/components/GlassCard';
 import { GoldButton } from '../src/components/GoldButton';
 import { api } from '../src/services/api';
-
-// Memoized input component OUTSIDE the main component to prevent re-renders
-const MeasurementInputField = memo(({ 
-  fieldKey, 
-  label, 
-  value, 
-  onChange,
-  isHighlighted 
-}: { 
-  fieldKey: string;
-  label: string; 
-  value: string; 
-  onChange: (key: string, value: string) => void;
-  isHighlighted: boolean;
-}) => {
-  return (
-    <View style={inputStyles.measurementInput}>
-      <Text style={inputStyles.inputLabel}>{label}</Text>
-      <TextInput
-        style={[inputStyles.input, isHighlighted && inputStyles.inputHighlighted]}
-        placeholder="0"
-        placeholderTextColor={COLORS.gray}
-        value={value}
-        onChangeText={(v) => onChange(fieldKey, v)}
-        keyboardType="numeric"
-      />
-    </View>
-  );
-});
-
-const inputStyles = StyleSheet.create({
-  measurementInput: {
-    width: '31%',
-    marginBottom: SPACING.sm,
-  },
-  inputLabel: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: COLORS.gray,
-    marginBottom: 4,
-  },
-  input: {
-    backgroundColor: COLORS.cream,
-    borderRadius: BORDER_RADIUS.sm,
-    padding: SPACING.sm,
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: COLORS.lightGray,
-    textAlign: 'center',
-  },
-  inputHighlighted: {
-    borderColor: COLORS.success,
-    borderWidth: 2,
-    backgroundColor: COLORS.success + '20',
-  },
-});
 
 // Field name mappings for voice recognition
 const FIELD_MAPPINGS: { [key: string]: string } = {
@@ -122,6 +67,33 @@ const FIELD_MAPPINGS: { [key: string]: string } = {
   'ankles': 'ankle',
 };
 
+// ALL 15 Top fields
+const TOP_FIELDS = [
+  { key: 'full_length', label: 'Full Length' },
+  { key: 'shoulder', label: 'Shoulder' },
+  { key: 'upper_chest', label: 'Upper Chest' },
+  { key: 'bust', label: 'Bust' },
+  { key: 'waist', label: 'Waist' },
+  { key: 'front_deep', label: 'Front Deep' },
+  { key: 'back_deep', label: 'Back Deep' },
+  { key: 'sleeve_length', label: 'Sleeve Length' },
+  { key: 'sleeve_round', label: 'Sleeve Around' },
+  { key: 'arm_hole', label: 'Arm Hole' },
+  { key: 'biceps', label: 'Biceps' },
+  { key: 'dot_point', label: 'Dot Point' },
+  { key: 'dot_to_dot', label: 'Dot to Dot' },
+  { key: 'slit_length', label: 'Slit Length' },
+  { key: 'seat_round', label: 'Seat Round' },
+];
+
+const BOTTOM_FIELDS = [
+  { key: 'length', label: 'Length' },
+  { key: 'hip_round', label: 'Hip Round' },
+  { key: 'thighs', label: 'Thighs' },
+  { key: 'knees', label: 'Knees' },
+  { key: 'ankle', label: 'Ankle' },
+];
+
 export default function EditMeasurementScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
@@ -142,7 +114,7 @@ export default function EditMeasurementScreen() {
   const isListeningRef = useRef(false);
   const chunkIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Top measurements - including front_deep and back_deep
+  // Top measurements - ALL 15 fields
   const [topMeasurements, setTopMeasurements] = useState({
     full_length: '',
     shoulder: '',
@@ -169,32 +141,6 @@ export default function EditMeasurementScreen() {
     knees: '',
     ankle: '',
   });
-
-  const topFields = [
-    { key: 'full_length', label: 'Full Length' },
-    { key: 'shoulder', label: 'Shoulder' },
-    { key: 'upper_chest', label: 'Upper Chest' },
-    { key: 'bust', label: 'Bust' },
-    { key: 'waist', label: 'Waist' },
-    { key: 'front_deep', label: 'Front Deep' },
-    { key: 'back_deep', label: 'Back Deep' },
-    { key: 'sleeve_length', label: 'Sleeve Length' },
-    { key: 'sleeve_round', label: 'Sleeve Around' },
-    { key: 'arm_hole', label: 'Arm Hole' },
-    { key: 'biceps', label: 'Biceps' },
-    { key: 'dot_point', label: 'Dot Point' },
-    { key: 'dot_to_dot', label: 'Dot to Dot' },
-    { key: 'slit_length', label: 'Slit Length' },
-    { key: 'seat_round', label: 'Seat Round' },
-  ];
-
-  const bottomFields = [
-    { key: 'length', label: 'Length' },
-    { key: 'hip_round', label: 'Hip Round' },
-    { key: 'thighs', label: 'Thighs' },
-    { key: 'knees', label: 'Knees' },
-    { key: 'ankle', label: 'Ankle' },
-  ];
 
   // Load existing measurement
   useEffect(() => {
@@ -303,7 +249,6 @@ export default function EditMeasurementScreen() {
       const response = await fetch(uri);
       const blob = await response.blob();
       
-      // Skip processing if audio is too short (likely silence)
       if (blob.size < 5000) {
         setStatusText('Listening...');
         return;
@@ -325,7 +270,6 @@ export default function EditMeasurementScreen() {
         
         if (result.success && result.text && result.text.trim() && result.text.trim().length > 2) {
           const newText = result.text.trim();
-          // Ignore common noise/silence transcriptions
           if (!['', '.', '..', '...', 'you', 'the', 'a', 'hmm', 'uh', 'um'].includes(newText.toLowerCase())) {
             setTranscribedText(prev => {
               const combined = prev ? `${prev} ${newText}` : newText;
@@ -453,15 +397,6 @@ export default function EditMeasurementScreen() {
     }
   };
 
-  // Memoized handler for measurement changes
-  const handleTopMeasurementChange = useCallback((key: string, value: string) => {
-    setTopMeasurements(prev => ({ ...prev, [key]: value }));
-  }, []);
-
-  const handleBottomMeasurementChange = useCallback((key: string, value: string) => {
-    setBottomMeasurements(prev => ({ ...prev, [key]: value }));
-  }, []);
-
   const handleSubmit = async () => {
     if (isListening) {
       await stopListening();
@@ -499,6 +434,36 @@ export default function EditMeasurementScreen() {
     }
   };
 
+  // Render a single measurement input - inline to avoid component recreation
+  const renderMeasurementInput = (field: { key: string; label: string }, index: number) => {
+    const value = category === 'Top' 
+      ? topMeasurements[field.key as keyof typeof topMeasurements] 
+      : bottomMeasurements[field.key as keyof typeof bottomMeasurements];
+    const isHighlighted = lastFilledField === field.key;
+    
+    return (
+      <View key={field.key} style={styles.measurementInput}>
+        <Text style={styles.measurementLabel}>{field.label}</Text>
+        <TextInput
+          style={[styles.measurementInputField, isHighlighted && styles.inputHighlighted]}
+          placeholder="0"
+          placeholderTextColor={COLORS.gray}
+          value={value}
+          onChangeText={(v) => {
+            if (category === 'Top') {
+              setTopMeasurements(prev => ({ ...prev, [field.key]: v }));
+            } else {
+              setBottomMeasurements(prev => ({ ...prev, [field.key]: v }));
+            }
+          }}
+          keyboardType="numeric"
+          returnKeyType="next"
+          blurOnSubmit={false}
+        />
+      </View>
+    );
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -514,6 +479,8 @@ export default function EditMeasurementScreen() {
     );
   }
 
+  const currentFields = category === 'Top' ? TOP_FIELDS : BOTTOM_FIELDS;
+
   return (
     <SafeAreaView style={styles.container}>
       <LinearGradient
@@ -521,8 +488,9 @@ export default function EditMeasurementScreen() {
         style={StyleSheet.absoluteFill}
       />
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.flex}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
         {/* Header */}
         <View style={styles.header}>
@@ -535,8 +503,8 @@ export default function EditMeasurementScreen() {
 
         <ScrollView 
           contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="none"
+          keyboardShouldPersistTaps="always"
+          showsVerticalScrollIndicator={false}
         >
           {/* Category Toggle */}
           <View style={styles.categoryToggle}>
@@ -615,18 +583,7 @@ export default function EditMeasurementScreen() {
           <GlassCard style={styles.measurementsCard}>
             <Text style={styles.sectionTitle}>{category} Measurements (inches)</Text>
             <View style={styles.measurementsGrid}>
-              {(category === 'Top' ? topFields : bottomFields).map((field) => (
-                <MeasurementInputField
-                  key={field.key}
-                  fieldKey={field.key}
-                  label={field.label}
-                  value={category === 'Top' 
-                    ? topMeasurements[field.key as keyof typeof topMeasurements] 
-                    : bottomMeasurements[field.key as keyof typeof bottomMeasurements]}
-                  onChange={category === 'Top' ? handleTopMeasurementChange : handleBottomMeasurementChange}
-                  isHighlighted={lastFilledField === field.key}
-                />
-              ))}
+              {currentFields.map((field, index) => renderMeasurementInput(field, index))}
             </View>
           </GlassCard>
 
@@ -657,6 +614,9 @@ export default function EditMeasurementScreen() {
             loading={saving}
             style={styles.submitButton}
           />
+          
+          {/* Extra padding at bottom for keyboard */}
+          <View style={{ height: 100 }} />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -814,7 +774,31 @@ const styles = StyleSheet.create({
   measurementsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: SPACING.sm,
+    justifyContent: 'space-between',
+  },
+  measurementInput: {
+    width: '31%',
+    marginBottom: SPACING.md,
+  },
+  measurementLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: COLORS.gray,
+    marginBottom: 4,
+  },
+  measurementInputField: {
+    backgroundColor: COLORS.cream,
+    borderRadius: BORDER_RADIUS.sm,
+    padding: SPACING.sm,
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: COLORS.lightGray,
+    textAlign: 'center',
+  },
+  inputHighlighted: {
+    borderColor: COLORS.success,
+    borderWidth: 2,
+    backgroundColor: COLORS.success + '20',
   },
   section: {
     marginBottom: SPACING.md,

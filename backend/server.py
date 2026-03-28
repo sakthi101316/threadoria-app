@@ -364,7 +364,7 @@ async def login(credentials: UserLogin):
     # Added: January 2025
     # Remove this block after one month to restore public access
     # ============================================================
-    ALLOWED_MOBILE = "9789967754"
+    ALLOWED_MOBILE = "8608080103"
     ALLOWED_PIN = "101316"
     
     if identifier != ALLOWED_MOBILE or credentials.pin != ALLOWED_PIN:
