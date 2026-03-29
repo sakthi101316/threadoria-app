@@ -23,6 +23,7 @@ export async function sendChatMessage(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': 'true',
       },
       body: JSON.stringify({
         phone: phone.startsWith('+') ? phone : `+91${phone}`,
