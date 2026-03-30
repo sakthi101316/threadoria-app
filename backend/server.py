@@ -11,6 +11,7 @@ import uuid
 from datetime import datetime, date
 import base64
 from bson import ObjectId
+import httpx
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -19,6 +20,9 @@ load_dotenv(ROOT_DIR / '.env')
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ.get('DB_NAME', 'boutiquefit')]
+
+# Antigravity AI Agent Configuration
+ANTIGRAVITY_BASE_URL = os.environ.get('ANTIGRAVITY_URL', 'https://prosternal-strangerlike-lani.ngrok-free.dev')
 
 # Create the main app without a prefix
 app = FastAPI(title="BoutiqueFit API")
@@ -32,6 +36,66 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# ========================== ANTIGRAVITY INTEGRATION ==========================
+
+async def notify_antigravity_order_created(customer_phone: str, customer_name: str, order_type: str, notes: str, amount: float):
+    """Notify Antigravity when a new order is created"""
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            payload = {
+                "customer_phone": customer_phone.replace("+", "") if customer_phone else "",
+                "customer_name": customer_name,
+                "order_type": order_type,
+                "notes": notes or "",
+                "amount": str(int(amount)) if amount else "0"
+            }
+            response = await client.post(
+                f"{ANTIGRAVITY_BASE_URL}/api/orders",
+                json=payload,
+                headers={"Content-Type": "application/json", "ngrok-skip-browser-warning": "true"}
+            )
+            logger.info(f"Antigravity order notification: {response.status_code} - {response.text}")
+            return response.json() if response.status_code == 200 else None
+    except Exception as e:
+        logger.error(f"Failed to notify Antigravity (order created): {e}")
+        return None
+
+async def notify_antigravity_status_update(order_id: str, status: str):
+    """Notify Antigravity when order status is updated"""
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            payload = {"status": status}
+            response = await client.post(
+                f"{ANTIGRAVITY_BASE_URL}/api/orders/{order_id}/status",
+                json=payload,
+                headers={"Content-Type": "application/json", "ngrok-skip-browser-warning": "true"}
+            )
+            logger.info(f"Antigravity status update: {response.status_code} - {response.text}")
+            return response.json() if response.status_code == 200 else None
+    except Exception as e:
+        logger.error(f"Failed to notify Antigravity (status update): {e}")
+        return None
+
+async def notify_antigravity_payment(order_id: str, amount: float, method: str = "Cash"):
+    """Notify Antigravity when a payment is received"""
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            payload = {
+                "order_id": order_id,
+                "amount": int(amount),
+                "method": method
+            }
+            response = await client.post(
+                f"{ANTIGRAVITY_BASE_URL}/api/payments",
+                json=payload,
+                headers={"Content-Type": "application/json", "ngrok-skip-browser-warning": "true"}
+            )
+            logger.info(f"Antigravity payment notification: {response.status_code} - {response.text}")
+            return response.json() if response.status_code == 200 else None
+    except Exception as e:
+        logger.error(f"Failed to notify Antigravity (payment): {e}")
+        return None
 
 # ========================== MODELS ==========================
 
@@ -630,6 +694,16 @@ async def create_order(order: OrderCreate):
     }
     result = await db.orders.insert_one(order_doc)
     order_doc['id'] = str(result.inserted_id)
+    
+    # Notify Antigravity AI Agent about new order
+    await notify_antigravity_order_created(
+        customer_phone=customer_phone,
+        customer_name=customer_name,
+        order_type=order.order_type,
+        notes=order.description or order.voice_instructions or "",
+        amount=0  # Amount will be added via payment
+    )
+    
     return OrderResponse(**order_doc)
 
 @api_router.get("/orders", response_model=List[OrderResponse])
@@ -722,6 +796,10 @@ async def update_order_status(order_id: str, status: str):
         )
         if result.matched_count == 0:
             raise HTTPException(status_code=404, detail="Order not found")
+        
+        # Notify Antigravity AI Agent about status update
+        await notify_antigravity_status_update(order_id=order_id, status=status)
+        
         return {"message": "Status updated successfully", "status": status}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -777,6 +855,14 @@ async def create_payment(payment: PaymentCreate):
     else:
         result = await db.payments.insert_one(payment_doc)
         payment_doc['id'] = str(result.inserted_id)
+    
+    # Notify Antigravity AI Agent about payment (only if advance paid > 0)
+    if payment.advance_paid > 0:
+        await notify_antigravity_payment(
+            order_id=payment.order_id,
+            amount=payment.advance_paid,
+            method="Cash"  # Default method
+        )
     
     return PaymentResponse(**payment_doc)
 
