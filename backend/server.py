@@ -42,14 +42,22 @@ logger = logging.getLogger(__name__)
 async def notify_antigravity_order_created(customer_phone: str, customer_name: str, order_type: str, notes: str, amount: float):
     """Notify Antigravity when a new order is created"""
     try:
+        # Format phone number - remove + and ensure it starts with 91
+        phone = customer_phone.replace("+", "").replace(" ", "") if customer_phone else ""
+        if phone and not phone.startswith("91"):
+            phone = "91" + phone
+        
+        payload = {
+            "customer_phone": phone,
+            "customer_name": customer_name,
+            "order_type": order_type,
+            "notes": notes or "",
+            "amount": str(int(amount)) if amount else "0"
+        }
+        
+        logger.info(f"Sending to Antigravity: {payload}")
+        
         async with httpx.AsyncClient(timeout=30.0) as client:
-            payload = {
-                "customer_phone": customer_phone.replace("+", "") if customer_phone else "",
-                "customer_name": customer_name,
-                "order_type": order_type,
-                "notes": notes or "",
-                "amount": str(int(amount)) if amount else "0"
-            }
             response = await client.post(
                 f"{ANTIGRAVITY_BASE_URL}/api/orders",
                 json=payload,
