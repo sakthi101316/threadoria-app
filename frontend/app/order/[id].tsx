@@ -11,11 +11,13 @@ import {
   Linking,
   Modal,
   Dimensions,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { COLORS, SPACING, BORDER_RADIUS, SHADOWS, ORDER_STATUSES } from '../../src/constants/theme';
 import { GlassCard } from '../../src/components/GlassCard';
 import { GoldButton } from '../../src/components/GoldButton';
@@ -56,6 +58,8 @@ export default function OrderDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [editingDeliveryDate, setEditingDeliveryDate] = useState<Date | null>(null);
 
   const fetchData = async () => {
     try {
@@ -90,6 +94,38 @@ export default function OrderDetailScreen() {
       Alert.alert('Success', `Status updated to ${newStatus}`);
     } catch (error) {
       Alert.alert('Error', 'Failed to update status');
+    }
+  };
+
+  const handleDeliveryDateEdit = () => {
+    if (order) {
+      setEditingDeliveryDate(new Date(order.delivery_date));
+      setShowDatePicker(true);
+    }
+  };
+
+  const handleDeliveryDateChange = async (event: any, selectedDate?: Date) => {
+    if (Platform.OS === 'android') {
+      setShowDatePicker(false);
+    }
+    
+    if (selectedDate && order) {
+      setEditingDeliveryDate(selectedDate);
+      if (Platform.OS === 'android') {
+        // Save immediately on Android
+        await saveDeliveryDate(selectedDate);
+      }
+    }
+  };
+
+  const saveDeliveryDate = async (date: Date) => {
+    try {
+      await api.updateOrder(id as string, { delivery_date: date.toISOString() });
+      setOrder(prev => prev ? { ...prev, delivery_date: date.toISOString() } : null);
+      Alert.alert('Success', 'Delivery date updated');
+      setShowDatePicker(false);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to update delivery date');
     }
   };
 
@@ -216,7 +252,7 @@ export default function OrderDetailScreen() {
                 </Text>
               </View>
             </View>
-            <View style={styles.dateItem}>
+            <TouchableOpacity style={styles.dateItem} onPress={handleDeliveryDateEdit}>
               <Ionicons name="gift" size={20} color={COLORS.primary} />
               <View>
                 <Text style={styles.dateLabel}>Delivery Date</Text>
@@ -224,7 +260,8 @@ export default function OrderDetailScreen() {
                   {format(new Date(order.delivery_date), 'dd MMM yyyy')}
                 </Text>
               </View>
-            </View>
+              <Ionicons name="pencil" size={16} color={COLORS.primary} style={{ marginLeft: 8 }} />
+            </TouchableOpacity>
           </View>
         </GlassCard>
 
@@ -380,6 +417,38 @@ export default function OrderDetailScreen() {
           )}
         </View>
       </Modal>
+
+      {/* Delivery Date Picker Modal */}
+      {showDatePicker && (
+        <Modal transparent animationType="fade" visible={showDatePicker}>
+          <View style={styles.dateModalOverlay}>
+            <View style={styles.dateModalContent}>
+              <View style={styles.dateModalHeader}>
+                <Text style={styles.dateModalTitle}>Change Delivery Date</Text>
+                <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                  <Ionicons name="close" size={24} color={COLORS.black} />
+                </TouchableOpacity>
+              </View>
+              <DateTimePicker
+                value={editingDeliveryDate || new Date()}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'spinner' : 'calendar'}
+                minimumDate={new Date()}
+                onChange={handleDeliveryDateChange}
+                style={{ width: '100%', height: 200 }}
+              />
+              {Platform.OS === 'ios' && (
+                <TouchableOpacity 
+                  style={styles.dateModalButton}
+                  onPress={() => editingDeliveryDate && saveDeliveryDate(editingDeliveryDate)}
+                >
+                  <Text style={styles.dateModalButtonText}>Save</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        </Modal>
+      )}
     </SafeAreaView>
   );
 }
@@ -606,5 +675,41 @@ const styles = StyleSheet.create({
   fullImage: {
     width: screenWidth,
     height: screenHeight * 0.8,
+  },
+  dateModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  dateModalContent: {
+    backgroundColor: COLORS.white,
+    borderRadius: BORDER_RADIUS.xl,
+    padding: SPACING.md,
+    width: '90%',
+    maxWidth: 400,
+  },
+  dateModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.md,
+  },
+  dateModalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: COLORS.black,
+  },
+  dateModalButton: {
+    backgroundColor: COLORS.primary,
+    padding: SPACING.md,
+    borderRadius: BORDER_RADIUS.md,
+    alignItems: 'center',
+    marginTop: SPACING.md,
+  },
+  dateModalButtonText: {
+    color: COLORS.white,
+    fontWeight: 'bold',
+    fontSize: 16,
   },
 });

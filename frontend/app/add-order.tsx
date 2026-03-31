@@ -286,14 +286,16 @@ export default function AddOrderScreen() {
         });
       }
 
+      // Stop loading BEFORE showing alert
+      setLoading(false);
+      
       console.log('Order created successfully!');
       Alert.alert('Success', 'Order created successfully!', [
         { text: 'OK', onPress: () => router.back() },
       ]);
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to create order');
-    } finally {
       setLoading(false);
+      Alert.alert('Error', error.message || 'Failed to create order');
     }
   };
 
