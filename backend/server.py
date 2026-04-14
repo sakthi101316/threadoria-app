@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, UploadFile, File, Form
+from fastapi import FastAPI, APIRouter, HTTPException, UploadFile, File, Form, BackgroundTasks
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -12,6 +12,7 @@ from datetime import datetime, date
 import base64
 from bson import ObjectId
 import httpx
+import asyncio
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -37,10 +38,21 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# ========================== ANTIGRAVITY INTEGRATION ==========================
+# ========================== ANTIGRAVITY INTEGRATION (NON-BLOCKING) ==========================
+
+def fire_and_forget(coro):
+    """Run a coroutine in the background without waiting for it"""
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            asyncio.create_task(coro)
+        else:
+            loop.run_until_complete(coro)
+    except Exception as e:
+        logger.error(f"Fire and forget error: {e}")
 
 async def notify_antigravity_order_created(customer_phone: str, customer_name: str, order_type: str, notes: str, amount: float):
-    """Notify Antigravity when a new order is created"""
+    """Notify Antigravity when a new order is created - NON-BLOCKING with short timeout"""
     try:
         # Format phone number - remove + and ensure it starts with 91
         phone = customer_phone.replace("+", "").replace(" ", "") if customer_phone else ""
@@ -57,8 +69,9 @@ async def notify_antigravity_order_created(customer_phone: str, customer_name: s
         
         logger.info(f"Sending to Antigravity: {payload}")
         
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.post(
+        # Use shorter timeout (5 seconds) to avoid blocking
+        async with httpx.AsyncClient(timeout=5.0) as http_client:
+            response = await http_client.post(
                 f"{ANTIGRAVITY_BASE_URL}/api/orders",
                 json=payload,
                 headers={"Content-Type": "application/json", "ngrok-skip-browser-warning": "true"}
@@ -70,11 +83,11 @@ async def notify_antigravity_order_created(customer_phone: str, customer_name: s
         return None
 
 async def notify_antigravity_status_update(order_id: str, status: str):
-    """Notify Antigravity when order status is updated"""
+    """Notify Antigravity when order status is updated - NON-BLOCKING"""
     try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with httpx.AsyncClient(timeout=5.0) as http_client:
             payload = {"status": status}
-            response = await client.post(
+            response = await http_client.post(
                 f"{ANTIGRAVITY_BASE_URL}/api/orders/{order_id}/status",
                 json=payload,
                 headers={"Content-Type": "application/json", "ngrok-skip-browser-warning": "true"}
@@ -86,15 +99,15 @@ async def notify_antigravity_status_update(order_id: str, status: str):
         return None
 
 async def notify_antigravity_payment(order_id: str, amount: float, method: str = "Cash"):
-    """Notify Antigravity when a payment is received"""
+    """Notify Antigravity when a payment is received - NON-BLOCKING"""
     try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with httpx.AsyncClient(timeout=5.0) as http_client:
             payload = {
                 "order_id": order_id,
                 "amount": int(amount),
                 "method": method
             }
-            response = await client.post(
+            response = await http_client.post(
                 f"{ANTIGRAVITY_BASE_URL}/api/payments",
                 json=payload,
                 headers={"Content-Type": "application/json", "ngrok-skip-browser-warning": "true"}
@@ -703,14 +716,14 @@ async def create_order(order: OrderCreate):
     result = await db.orders.insert_one(order_doc)
     order_doc['id'] = str(result.inserted_id)
     
-    # Notify Antigravity AI Agent about new order
-    await notify_antigravity_order_created(
+    # Notify Antigravity AI Agent about new order (NON-BLOCKING - fire and forget)
+    asyncio.create_task(notify_antigravity_order_created(
         customer_phone=customer_phone,
         customer_name=customer_name,
         order_type=order.order_type,
         notes=order.description or order.voice_instructions or "",
         amount=0  # Amount will be added via payment
-    )
+    ))
     
     return OrderResponse(**order_doc)
 
@@ -805,8 +818,8 @@ async def update_order_status(order_id: str, status: str):
         if result.matched_count == 0:
             raise HTTPException(status_code=404, detail="Order not found")
         
-        # Notify Antigravity AI Agent about status update
-        await notify_antigravity_status_update(order_id=order_id, status=status)
+        # Notify Antigravity AI Agent about status update (NON-BLOCKING)
+        asyncio.create_task(notify_antigravity_status_update(order_id=order_id, status=status))
         
         return {"message": "Status updated successfully", "status": status}
     except Exception as e:
@@ -864,13 +877,13 @@ async def create_payment(payment: PaymentCreate):
         result = await db.payments.insert_one(payment_doc)
         payment_doc['id'] = str(result.inserted_id)
     
-    # Notify Antigravity AI Agent about payment (only if advance paid > 0)
+    # Notify Antigravity AI Agent about payment (only if advance paid > 0) - NON-BLOCKING
     if payment.advance_paid > 0:
-        await notify_antigravity_payment(
+        asyncio.create_task(notify_antigravity_payment(
             order_id=payment.order_id,
             amount=payment.advance_paid,
             method="Cash"  # Default method
-        )
+        ))
     
     return PaymentResponse(**payment_doc)
 
