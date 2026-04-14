@@ -6,13 +6,14 @@ import os
 import logging
 from pathlib import Path
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List, Optional, Dict
 import uuid
 from datetime import datetime, date
 import base64
 from bson import ObjectId
 import httpx
 import asyncio
+from emergentintegrations.llm.chat import LlmChat, UserMessage
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -1533,6 +1534,89 @@ async def request_backup(backup: BackupRequest):
     except Exception as e:
         logger.error(f"Backup error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+# ========================== CLAUDE AI CHAT ==========================
+
+# Store chat sessions in memory (for simple session management)
+chat_sessions: Dict[str, LlmChat] = {}
+
+BOUTIQUE_SYSTEM_MESSAGE = """You are MAAHIS AI, a premium boutique assistant for MAAHIS Designer Boutique. You help with:
+
+🎯 **Your Capabilities:**
+- Order status tracking and updates
+- Customer inquiries and support
+- Delivery schedule management
+- Payment reminders and tracking
+- Appointment scheduling
+- Fabric and design consultations
+
+💼 **Boutique Context:**
+- Premium designer boutique specializing in custom tailoring
+- Services: Blouses, Sarees, Suits, Lehengas, Bridal wear
+- Focus on quality craftsmanship and personalized service
+
+🎨 **Your Personality:**
+- Professional yet warm and friendly
+- Attentive to customer needs
+- Quick and helpful responses
+- Always maintain boutique's premium image
+
+Respond concisely and helpfully. Use emojis sparingly for a modern touch."""
+
+class ClaudeChatRequest(BaseModel):
+    phone: str
+    message: str
+    is_owner: bool = True
+
+class ClaudeChatResponse(BaseModel):
+    status: str
+    reply: str
+
+@api_router.post("/claude/chat", response_model=ClaudeChatResponse)
+async def claude_chat(request: ClaudeChatRequest):
+    """Chat with Claude AI assistant"""
+    try:
+        api_key = os.environ.get('EMERGENT_LLM_KEY')
+        if not api_key:
+            raise HTTPException(status_code=500, detail="Claude API key not configured")
+        
+        # Use phone as session ID for conversation continuity
+        session_id = f"boutique_{request.phone}"
+        
+        # Get or create chat session
+        if session_id not in chat_sessions:
+            chat = LlmChat(
+                api_key=api_key,
+                session_id=session_id,
+                system_message=BOUTIQUE_SYSTEM_MESSAGE
+            )
+            # Use Claude Sonnet 4.6
+            chat.with_model("anthropic", "claude-sonnet-4-6")
+            chat_sessions[session_id] = chat
+        else:
+            chat = chat_sessions[session_id]
+        
+        # Create user message
+        user_message = UserMessage(text=request.message)
+        
+        # Get response from Claude
+        response = await chat.send_message(user_message)
+        
+        logger.info(f"Claude chat - Phone: {request.phone}, Message: {request.message[:50]}...")
+        
+        return ClaudeChatResponse(status="success", reply=response)
+        
+    except Exception as e:
+        logger.error(f"Claude chat error: {str(e)}")
+        return ClaudeChatResponse(status="error", reply=f"Sorry, I encountered an issue. Please try again. ({str(e)[:50]})")
+
+@api_router.post("/claude/chat/clear")
+async def clear_claude_chat(phone: str):
+    """Clear chat history for a phone number"""
+    session_id = f"boutique_{phone}"
+    if session_id in chat_sessions:
+        del chat_sessions[session_id]
+    return {"status": "success", "message": "Chat history cleared"}
 
 # Include the router in the main app
 app.include_router(api_router)

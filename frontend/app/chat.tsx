@@ -49,7 +49,7 @@ export default function ChatScreen() {
         // Add welcome message
         setMessages([{
           id: '1',
-          text: `Hello! I'm your AI assistant. I can help you with:\n\n• Order status & tracking\n• Customer inquiries\n• Delivery schedules\n• Payment reminders\n• General boutique queries\n\nHow can I assist you today?`,
+          text: `✨ Welcome to MAAHIS AI!\n\nI'm your premium boutique assistant powered by Claude. I can help you with:\n\n👗 Order status & tracking\n👥 Customer inquiries\n📅 Delivery schedules\n💰 Payment reminders\n🎨 Design consultations\n\nHow may I assist you today?`,
           isUser: false,
           timestamp: new Date(),
         }]);
@@ -159,14 +159,14 @@ export default function ChatScreen() {
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           <LinearGradient
-            colors={['#4F46E5', '#7C3AED']}
+            colors={['#8B5CF6', '#6D28D9']}
             style={styles.headerAvatar}
           >
-            <MaterialCommunityIcons name="robot" size={24} color={COLORS.white} />
+            <MaterialCommunityIcons name="creation" size={24} color={COLORS.white} />
           </LinearGradient>
           <View>
-            <Text style={styles.headerTitle}>AI Assistant</Text>
-            <Text style={styles.headerSubtitle}>Always here to help</Text>
+            <Text style={styles.headerTitle}>MAAHIS AI</Text>
+            <Text style={styles.headerSubtitle}>Powered by Claude</Text>
           </View>
         </View>
         <TouchableOpacity onPress={clearChat} style={styles.clearButton}>

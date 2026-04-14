@@ -1,5 +1,11 @@
-// Antigravity AI Chat Service
-const CHAT_API_URL = 'https://prosternal-strangerlike-lani.ngrok-free.dev/api/chat';
+// Claude AI Chat Service - Powered by MAAHIS AI
+import Constants from 'expo-constants';
+
+const getBackendUrl = () => {
+  return Constants.expoConfig?.extra?.backendUrl || 
+         process.env.EXPO_PUBLIC_BACKEND_URL || 
+         'https://boutiquefit-staging.preview.emergentagent.com';
+};
 
 export interface ChatMessage {
   id: string;
@@ -19,14 +25,14 @@ export async function sendChatMessage(
   isOwner: boolean
 ): Promise<{ success: boolean; reply: string; error?: string }> {
   try {
-    const response = await fetch(CHAT_API_URL, {
+    const baseUrl = getBackendUrl();
+    const response = await fetch(`${baseUrl}/api/claude/chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'ngrok-skip-browser-warning': 'true',
       },
       body: JSON.stringify({
-        phone: phone.startsWith('+') ? phone : `+91${phone}`,
+        phone: phone.startsWith('+') ? phone.replace('+', '') : phone,
         message: message,
         is_owner: isOwner,
       }),
@@ -37,10 +43,26 @@ export async function sendChatMessage(
     if (data.status === 'success') {
       return { success: true, reply: data.reply };
     } else {
-      return { success: false, reply: '', error: 'Failed to get response' };
+      return { success: false, reply: data.reply || '', error: 'Failed to get response' };
     }
   } catch (error: any) {
-    console.error('Chat API Error:', error);
+    console.error('Claude Chat API Error:', error);
     return { success: false, reply: '', error: error.message || 'Connection failed' };
+  }
+}
+
+export async function clearChatHistory(phone: string): Promise<boolean> {
+  try {
+    const baseUrl = getBackendUrl();
+    const response = await fetch(`${baseUrl}/api/claude/chat/clear?phone=${phone}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    return response.ok;
+  } catch (error) {
+    console.error('Clear chat error:', error);
+    return false;
   }
 }
