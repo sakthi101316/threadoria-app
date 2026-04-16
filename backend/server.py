@@ -974,11 +974,16 @@ async def get_payment_analytics(period: str = "all", user_id: Optional[str] = No
     # Get all payments - we need to filter by user_id through orders
     all_payments = await db.payments.find(date_filter).sort("last_updated", -1).to_list(1000)
     
+    # Batch fetch all orders for these payments (avoid N+1 queries)
+    order_ids = [ObjectId(p['order_id']) for p in all_payments if p.get('order_id')]
+    orders_cursor = await db.orders.find({"_id": {"$in": order_ids}}).to_list(1000)
+    orders_dict = {str(o['_id']): o for o in orders_cursor}
+    
     # Filter payments by user_id if provided
     payments = []
     for p in all_payments:
         if user_id and p.get('order_id'):
-            order = await db.orders.find_one({"_id": ObjectId(p['order_id'])})
+            order = orders_dict.get(p['order_id'])
             if order and order.get('user_id') == user_id:
                 payments.append(p)
         elif not user_id:
@@ -993,10 +998,10 @@ async def get_payment_analytics(period: str = "all", user_id: Optional[str] = No
     partial_count = sum(1 for p in payments if p.get('payment_status') == 'partial')
     unpaid_count = sum(1 for p in payments if p.get('payment_status') == 'unpaid')
     
-    # Enrich payments with order and customer info
+    # Enrich payments with order and customer info (using cached orders_dict)
     enriched_payments = []
     for p in payments:
-        order = await db.orders.find_one({"_id": ObjectId(p['order_id'])}) if p.get('order_id') else None
+        order = orders_dict.get(p.get('order_id', ''))
         enriched_payments.append({
             "id": str(p['_id']),
             "order_id": p.get('order_id', ''),
