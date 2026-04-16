@@ -35,29 +35,22 @@ export default function LoginScreen() {
   const pinRef = useRef<TextInput>(null);
 
   useEffect(() => {
-    // Animate logo on splash
-    Animated.parallel([
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        tension: 50,
-        friction: 7,
-        useNativeDriver: true,
-      }),
-      Animated.timing(rotateAnim, {
-        toValue: 1,
-        duration: 1000,
-        useNativeDriver: true,
-      }),
-    ]).start();
+    // Fast animation on splash
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      tension: 100,
+      friction: 8,
+      useNativeDriver: true,
+    }).start();
 
-    // Show splash for 2.5 seconds
+    // Quick splash - only 1 second
     const timer = setTimeout(() => {
       Animated.timing(fadeAnim, {
         toValue: 0,
-        duration: 500,
+        duration: 300,
         useNativeDriver: true,
       }).start(() => setShowSplash(false));
-    }, 2500);
+    }, 1000);
 
     return () => clearTimeout(timer);
   }, []);
@@ -256,6 +249,8 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 3,
+    borderColor: COLORS.gold,
     ...SHADOWS.gold,
   },
   splashAppName: {
@@ -313,29 +308,28 @@ const styles = StyleSheet.create({
     width: 140,
     height: 140,
     borderRadius: 70,
-    backgroundColor: COLORS.black,
+    backgroundColor: COLORS.white,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
+    borderWidth: 3,
+    borderColor: COLORS.gold,
     ...SHADOWS.large,
   },
   mainLogo: {
-    width: 120,
-    height: 120,
+    width: 130,
+    height: 130,
   },
   splashLogo: {
-    width: 100,
-    height: 100,
+    width: 110,
+    height: 110,
   },
   appName: {
     fontSize: 38,
     fontWeight: 'bold',
-    color: COLORS.black,
+    color: COLORS.primary,
     marginTop: SPACING.md,
     letterSpacing: 3,
-    textShadowColor: COLORS.gold + '40',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
   },
   tagline: {
     fontSize: 15,
