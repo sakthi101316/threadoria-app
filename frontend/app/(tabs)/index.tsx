@@ -139,7 +139,7 @@ export default function DashboardScreen() {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.logoContainer}>
-          <Text style={styles.headerTitle}>BoutiqueFit</Text>
+          <Text style={styles.headerTitle}>MAAHIS</Text>
         </View>
         <TouchableOpacity 
           style={styles.headerButton}
@@ -159,7 +159,7 @@ export default function DashboardScreen() {
         {/* Boutique Name Header */}
         <View style={styles.boutiqueHeader}>
           <MaterialCommunityIcons name="scissors-cutting" size={28} color={COLORS.primary} />
-          <Text style={styles.boutiqueName}>{user?.boutique_name || 'BoutiqueFit'}</Text>
+          <Text style={styles.boutiqueName}>{user?.boutique_name || 'MAAHIS'}</Text>
         </View>
         <Text style={styles.tagline}>Where Elegance Meets Perfection</Text>
 

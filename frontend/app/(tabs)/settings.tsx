@@ -119,7 +119,7 @@ export default function SettingsScreen() {
 
         {/* Footer */}
         <View style={styles.footer}>
-          <Text style={styles.footerText}>BoutiqueFit</Text>
+          <Text style={styles.footerText}>MAAHIS</Text>
           <Text style={styles.footerSubtext}>"Where Elegance Meets Perfection"</Text>
         </View>
       </ScrollView>
