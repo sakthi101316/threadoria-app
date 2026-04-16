@@ -24,7 +24,7 @@ client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ.get('DB_NAME', 'boutiquefit')]
 
 # Antigravity AI Agent Configuration
-ANTIGRAVITY_BASE_URL = os.environ.get('ANTIGRAVITY_URL', 'https://prosternal-strangerlike-lani.ngrok-free.dev')
+ANTIGRAVITY_BASE_URL = os.environ.get('ANTIGRAVITY_URL', 'https://bbs-hereby-headquarters-hartford.trycloudflare.com')
 
 # Create the main app without a prefix
 app = FastAPI(title="BoutiqueFit API")
@@ -73,7 +73,7 @@ async def notify_antigravity_order_created(customer_phone: str, customer_name: s
         # Use shorter timeout (5 seconds) to avoid blocking
         async with httpx.AsyncClient(timeout=5.0) as http_client:
             response = await http_client.post(
-                f"{ANTIGRAVITY_BASE_URL}/api/orders",
+                f"{ANTIGRAVITY_BASE_URL}/api/new-order",
                 json=payload,
                 headers={"Content-Type": "application/json", "ngrok-skip-browser-warning": "true"}
             )
