@@ -120,9 +120,11 @@ export default function LoginScreen() {
         <AnimatedBackground>
           <View style={styles.splashContent}>
             <Animated.View style={[styles.splashLogoCircle, { transform: [{ scale: scaleAnim }] }]}>
-              <Animated.View style={{ transform: [{ rotate: spin }] }}>
-                <MaterialCommunityIcons name="scissors-cutting" size={70} color={COLORS.primary} />
-              </Animated.View>
+              <Image 
+                source={require('../assets/maahis-logo.png')} 
+                style={styles.splashLogo}
+                resizeMode="contain"
+              />
             </Animated.View>
             <Text style={styles.splashAppName}>{APP_CONFIG.name}</Text>
             <Text style={styles.splashTagline}>{APP_CONFIG.tagline}</Text>
@@ -147,12 +149,12 @@ export default function LoginScreen() {
           >
             {/* Logo Section */}
             <View style={styles.logoSection}>
-              <View style={styles.logoOuterRing}>
-                <View style={styles.logoMiddleRing}>
-                  <View style={styles.logoCircle}>
-                    <MaterialCommunityIcons name="scissors-cutting" size={55} color={COLORS.primary} />
-                  </View>
-                </View>
+              <View style={styles.logoContainer}>
+                <Image 
+                  source={require('../assets/maahis-logo.png')} 
+                  style={styles.mainLogo}
+                  resizeMode="contain"
+                />
               </View>
               <Text style={styles.appName}>{APP_CONFIG.name}</Text>
               <Text style={styles.tagline}>{APP_CONFIG.tagline}</Text>
@@ -208,7 +210,7 @@ export default function LoginScreen() {
               />
 
               <View style={styles.registerContainer}>
-                <Text style={styles.registerText}>New to BoutiqueFit?</Text>
+                <Text style={styles.registerText}>New to MAAHIS?</Text>
                 <TouchableOpacity onPress={() => router.push('/register')}>
                   <Text style={styles.registerLink}>Create Account</Text>
                 </TouchableOpacity>
@@ -307,12 +309,30 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: COLORS.gold + '40',
   },
+  logoContainer: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: COLORS.black,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+    ...SHADOWS.large,
+  },
+  mainLogo: {
+    width: 120,
+    height: 120,
+  },
+  splashLogo: {
+    width: 100,
+    height: 100,
+  },
   appName: {
     fontSize: 38,
     fontWeight: 'bold',
-    color: COLORS.primary,
+    color: COLORS.black,
     marginTop: SPACING.md,
-    letterSpacing: 1,
+    letterSpacing: 3,
     textShadowColor: COLORS.gold + '40',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,

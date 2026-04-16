@@ -1,37 +1,39 @@
 {
   "expo": {
-    "name": "BoutiqueFit",
-    "slug": "boutiquefit",
+    "name": "MAAHIS",
+    "slug": "maahis",
     "version": "2.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "scheme": "boutiquefit",
+    "icon": "./assets/maahis-logo.png",
+    "scheme": "maahis",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.maahis.boutique"
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#8B1538"
+        "foregroundImage": "./assets/maahis-logo.png",
+        "backgroundColor": "#000000"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.maahis.boutique"
     },
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/maahis-logo.png"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
+          "image": "./assets/maahis-logo.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#FDF8F3"
+          "backgroundColor": "#000000"
         }
       ],
       "@react-native-community/datetimepicker",

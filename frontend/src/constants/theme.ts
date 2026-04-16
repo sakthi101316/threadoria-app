@@ -1,18 +1,18 @@
-// BoutiqueFit - Multi-Boutique Management App Theme
+// MAAHIS Designer Boutique - Premium Tailoring Management App
 export const COLORS = {
-  primary: '#8B1538',      // Deep Burgundy
-  secondary: '#C9A050',    // Gold
-  accent: '#2A85B5',       // Accent Blue
-  gold: '#D4AF37',         // Rich Gold
-  cream: '#FDF8F3',        // Warm Cream Background
+  primary: '#000000',        // Black - Premium
+  secondary: '#D4AF37',      // Gold
+  accent: '#8B1538',         // Deep Burgundy Accent
+  gold: '#D4AF37',           // Rich Gold
+  cream: '#FDF8F3',          // Warm Cream Background
   white: '#FFFFFF',
-  black: '#1A1A1A',
+  black: '#000000',
   gray: '#6B7280',
   lightGray: '#E5E7EB',
   success: '#10B981',
   warning: '#F59E0B',
   error: '#EF4444',
-  rose: '#BE185D',         // Rose accent
+  rose: '#BE185D',           // Rose accent
   
   // Status colors
   statusReceived: '#6B7280',
@@ -24,8 +24,8 @@ export const COLORS = {
 };
 
 export const APP_CONFIG = {
-  name: 'BoutiqueFit',
-  tagline: 'Where Elegance Meets Perfection',
+  name: 'MAAHIS',
+  tagline: 'Designer Boutique',
   version: '2.0.0',
 };
 
