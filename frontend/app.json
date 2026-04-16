@@ -4,7 +4,7 @@
     "slug": "maahis",
     "version": "2.0.0",
     "orientation": "portrait",
-    "icon": "./assets/maahis-logo.png",
+    "icon": "./assets/maahis-icon.png",
     "scheme": "maahis",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -14,8 +14,8 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/maahis-logo.png",
-        "backgroundColor": "#FFFFFF"
+        "foregroundImage": "./assets/maahis-icon.png",
+        "backgroundColor": "#000000"
       },
       "edgeToEdgeEnabled": true,
       "package": "com.maahis.boutique"
@@ -23,12 +23,12 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/maahis-logo.png",
+      "favicon": "./assets/maahis-icon.png",
       "name": "MAAHIS Designer Boutique",
       "shortName": "MAAHIS",
-      "description": "Premium boutique management app for MAAHIS Designer Boutique",
-      "backgroundColor": "#FDF8F3",
-      "themeColor": "#8B1538",
+      "description": "Premium boutique management app - Where Elegance Meets Perfection",
+      "backgroundColor": "#000000",
+      "themeColor": "#000000",
       "startUrl": "/",
       "display": "standalone",
       "orientation": "portrait"
@@ -38,10 +38,10 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/maahis-logo.png",
+          "image": "./assets/maahis-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#FFFFFF"
+          "backgroundColor": "#000000"
         }
       ],
       "@react-native-community/datetimepicker",
