@@ -4,7 +4,7 @@ import Constants from 'expo-constants';
 const getBackendUrl = () => {
   return Constants.expoConfig?.extra?.backendUrl || 
          process.env.EXPO_PUBLIC_BACKEND_URL || 
-         'https://boutiquefit-staging.preview.emergentagent.com';
+         '';
 };
 
 export interface ChatMessage {

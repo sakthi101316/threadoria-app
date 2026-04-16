@@ -161,7 +161,7 @@ export default function DashboardScreen() {
           <MaterialCommunityIcons name="scissors-cutting" size={28} color={COLORS.primary} />
           <Text style={styles.boutiqueName}>{user?.boutique_name || 'MAAHIS'}</Text>
         </View>
-        <Text style={styles.tagline}>Where Elegance Meets Perfection</Text>
+        <Text style={styles.tagline}>{APP_CONFIG.tagline}</Text>
 
         {/* Stats Section */}
         <Text style={styles.sectionTitle}>Overview</Text>
