@@ -24,7 +24,7 @@ client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ.get('DB_NAME', 'boutiquefit')]
 
 # MAAHIS Live Dashboard Agent Configuration
-AGENT_BASE_URL = os.environ.get('AGENT_URL', 'https://notices-opposite-priced-text.trycloudflare.com')
+AGENT_BASE_URL = os.environ.get('AGENT_URL', 'https://cold-sheep-warn.loca.lt')
 
 # Create the main app without a prefix
 app = FastAPI(title="BoutiqueFit API")
@@ -71,13 +71,17 @@ async def notify_antigravity_order_created(order_number: str, customer_phone: st
         
         logger.info(f"Sending to MAAHIS Dashboard: {payload}")
         
-        async with httpx.AsyncClient(timeout=5.0) as http_client:
+        async with httpx.AsyncClient(timeout=10.0) as http_client:
             response = await http_client.post(
                 f"{AGENT_BASE_URL}/api/new-order",
                 json=payload,
-                headers={"Content-Type": "application/json"}
+                headers={
+                    "Content-Type": "application/json",
+                    "Bypass-Tunnel-Reminder": "true",
+                    "User-Agent": "MAAHIS-Webhook/1.0"
+                }
             )
-            logger.info(f"Dashboard response: {response.status_code} - {response.text}")
+            logger.info(f"Dashboard response: {response.status_code} - {response.text[:200]}")
             return response.json() if response.status_code == 200 else None
     except Exception as e:
         logger.error(f"Failed to notify Dashboard (new order): {e}")
@@ -100,13 +104,17 @@ async def notify_antigravity_status_update(order_number: str, phone: str, new_st
         
         logger.info(f"Sending status update to Dashboard: {payload}")
         
-        async with httpx.AsyncClient(timeout=5.0) as http_client:
+        async with httpx.AsyncClient(timeout=10.0) as http_client:
             response = await http_client.post(
                 f"{AGENT_BASE_URL}/api/status-update",
                 json=payload,
-                headers={"Content-Type": "application/json"}
+                headers={
+                    "Content-Type": "application/json",
+                    "Bypass-Tunnel-Reminder": "true",
+                    "User-Agent": "MAAHIS-Webhook/1.0"
+                }
             )
-            logger.info(f"Status update response: {response.status_code} - {response.text}")
+            logger.info(f"Status update response: {response.status_code} - {response.text[:200]}")
             return response.json() if response.status_code == 200 else None
     except Exception as e:
         logger.error(f"Failed to notify Dashboard (status update): {e}")
