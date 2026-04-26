@@ -842,7 +842,7 @@ async def update_order(order_id: str, update: OrderUpdate, user_id: Optional[str
 @api_router.put("/orders/{order_id}/status")
 async def update_order_status(order_id: str, status: str):
     """Update order status"""
-    valid_statuses = ["received", "cutting", "stitching", "trial_ready", "completed", "delivered"]
+    valid_statuses = ["received", "cutting", "stitching", "embroidery", "trial", "trial_ready", "finishing", "ready", "dispatched", "completed", "delivered"]
     if status not in valid_statuses:
         raise HTTPException(status_code=400, detail=f"Invalid status. Must be one of: {valid_statuses}")
     
@@ -922,13 +922,30 @@ async def create_payment(payment: PaymentCreate):
         result = await db.payments.insert_one(payment_doc)
         payment_doc['id'] = str(result.inserted_id)
     
-    # Notify Antigravity AI Agent about payment (only if advance paid > 0) - NON-BLOCKING
-    if payment.advance_paid > 0:
-        asyncio.create_task(notify_antigravity_payment(
-            order_id=payment.order_id,
-            amount=payment.advance_paid,
-            method="Cash"  # Default method
-        ))
+    # Get order details for webhook with actual amount
+    try:
+        order = await db.orders.find_one({"_id": ObjectId(payment.order_id)})
+        if order:
+            order_number = f"ORD-{payment.order_id[-6:].upper()}"
+            delivery_date_str = ""
+            if order.get('delivery_date'):
+                try:
+                    delivery_date_str = order['delivery_date'].strftime('%d %b %Y')
+                except:
+                    delivery_date_str = str(order.get('delivery_date', ''))
+            
+            # Send webhook with REAL AMOUNT when payment is created/updated
+            asyncio.create_task(notify_antigravity_order_created(
+                order_number=order_number,
+                customer_phone=order.get('customer_phone', ''),
+                customer_name=order.get('customer_name', ''),
+                order_type=order.get('order_type', ''),
+                notes=order.get('description', ''),
+                amount=payment.final_amount,  # REAL AMOUNT from payment
+                delivery_date=delivery_date_str
+            ))
+    except Exception as e:
+        logger.error(f"Error sending payment webhook: {e}")
     
     return PaymentResponse(**payment_doc)
 
