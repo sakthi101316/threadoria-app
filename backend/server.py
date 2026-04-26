@@ -24,7 +24,7 @@ client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ.get('DB_NAME', 'boutiquefit')]
 
 # MAAHIS Live Dashboard Agent Configuration
-AGENT_BASE_URL = os.environ.get('AGENT_URL', 'https://cold-sheep-warn.loca.lt')
+AGENT_BASE_URL = os.environ.get('AGENT_URL', 'https://free-ears-post.loca.lt')
 
 # Create the main app without a prefix
 app = FastAPI(title="BoutiqueFit API")
