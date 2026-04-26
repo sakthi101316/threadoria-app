@@ -23,8 +23,8 @@ mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ.get('DB_NAME', 'boutiquefit')]
 
-# Antigravity AI Agent Configuration
-ANTIGRAVITY_BASE_URL = os.environ.get('ANTIGRAVITY_URL', 'https://bbs-hereby-headquarters-hartford.trycloudflare.com')
+# MAAHIS Live Dashboard Agent Configuration
+AGENT_BASE_URL = os.environ.get('AGENT_URL', 'https://notices-opposite-priced-text.trycloudflare.com')
 
 # Create the main app without a prefix
 app = FastAPI(title="BoutiqueFit API")
@@ -52,51 +52,64 @@ def fire_and_forget(coro):
     except Exception as e:
         logger.error(f"Fire and forget error: {e}")
 
-async def notify_antigravity_order_created(customer_phone: str, customer_name: str, order_type: str, notes: str, amount: float):
-    """Notify Antigravity when a new order is created - NON-BLOCKING with short timeout"""
+async def notify_antigravity_order_created(order_number: str, customer_phone: str, customer_name: str, order_type: str, notes: str, amount: float, delivery_date: str = ""):
+    """Send new order to MAAHIS Live Dashboard - INSTANT, NON-BLOCKING"""
     try:
-        # Format phone number - remove + and ensure it starts with 91
+        # Format phone number
         phone = customer_phone.replace("+", "").replace(" ", "") if customer_phone else ""
         if phone and not phone.startswith("91"):
             phone = "91" + phone
         
         payload = {
+            "order_number": order_number,
             "customer_phone": phone,
             "customer_name": customer_name,
-            "order_type": order_type,
-            "notes": notes or "",
-            "amount": str(int(amount)) if amount else "0"
+            "item": order_type,
+            "delivery_date": delivery_date,
+            "amount": int(amount) if amount else 0
         }
         
-        logger.info(f"Sending to Antigravity: {payload}")
+        logger.info(f"Sending to MAAHIS Dashboard: {payload}")
         
-        # Use shorter timeout (5 seconds) to avoid blocking
         async with httpx.AsyncClient(timeout=5.0) as http_client:
             response = await http_client.post(
-                f"{ANTIGRAVITY_BASE_URL}/api/new-order",
+                f"{AGENT_BASE_URL}/api/new-order",
                 json=payload,
-                headers={"Content-Type": "application/json", "ngrok-skip-browser-warning": "true"}
+                headers={"Content-Type": "application/json"}
             )
-            logger.info(f"Antigravity order notification: {response.status_code} - {response.text}")
+            logger.info(f"Dashboard response: {response.status_code} - {response.text}")
             return response.json() if response.status_code == 200 else None
     except Exception as e:
-        logger.error(f"Failed to notify Antigravity (order created): {e}")
+        logger.error(f"Failed to notify Dashboard (new order): {e}")
         return None
 
-async def notify_antigravity_status_update(order_id: str, status: str):
-    """Notify Antigravity when order status is updated - NON-BLOCKING"""
+async def notify_antigravity_status_update(order_number: str, phone: str, new_status: str, customer_name: str):
+    """Send status update to MAAHIS Live Dashboard - INSTANT, NON-BLOCKING"""
     try:
+        # Format phone number
+        formatted_phone = phone.replace("+", "").replace(" ", "") if phone else ""
+        if formatted_phone and not formatted_phone.startswith("91"):
+            formatted_phone = "91" + formatted_phone
+            
+        payload = {
+            "order_number": order_number,
+            "phone": formatted_phone,
+            "new_status": new_status,
+            "customer_name": customer_name
+        }
+        
+        logger.info(f"Sending status update to Dashboard: {payload}")
+        
         async with httpx.AsyncClient(timeout=5.0) as http_client:
-            payload = {"status": status}
             response = await http_client.post(
-                f"{ANTIGRAVITY_BASE_URL}/api/orders/{order_id}/status",
+                f"{AGENT_BASE_URL}/api/status-update",
                 json=payload,
-                headers={"Content-Type": "application/json", "ngrok-skip-browser-warning": "true"}
+                headers={"Content-Type": "application/json"}
             )
-            logger.info(f"Antigravity status update: {response.status_code} - {response.text}")
+            logger.info(f"Status update response: {response.status_code} - {response.text}")
             return response.json() if response.status_code == 200 else None
     except Exception as e:
-        logger.error(f"Failed to notify Antigravity (status update): {e}")
+        logger.error(f"Failed to notify Dashboard (status update): {e}")
         return None
 
 async def notify_antigravity_payment(order_id: str, amount: float, method: str = "Cash"):
@@ -717,8 +730,12 @@ async def create_order(order: OrderCreate):
     result = await db.orders.insert_one(order_doc)
     order_doc['id'] = str(result.inserted_id)
     
-    # Notify Antigravity AI Agent about new order (NON-BLOCKING - fire and forget)
+    # Generate order number
+    order_number = f"ORD-{str(result.inserted_id)[-6:].upper()}"
+    
+    # Notify Agent about new order (NON-BLOCKING - fire and forget)
     asyncio.create_task(notify_antigravity_order_created(
+        order_number=order_number,
         customer_phone=customer_phone,
         customer_name=customer_name,
         order_type=order.order_type,
