@@ -1670,6 +1670,12 @@ async def clear_claude_chat(phone: str):
 # Include the router in the main app
 app.include_router(api_router)
 
+# Root-level health check for deployment
+@app.get("/health")
+async def root_health_check():
+    """Root health check for deployment systems"""
+    return {"status": "healthy", "service": "MAAHIS API"}
+
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
