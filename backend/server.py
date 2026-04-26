@@ -733,6 +733,15 @@ async def create_order(order: OrderCreate):
     # Generate order number
     order_number = f"ORD-{str(result.inserted_id)[-6:].upper()}"
     
+    # Format delivery date for webhook
+    delivery_date_str = ""
+    if order.delivery_date:
+        try:
+            dd = datetime.fromisoformat(order.delivery_date.replace('Z', '+00:00'))
+            delivery_date_str = dd.strftime('%d %b %Y')
+        except:
+            delivery_date_str = order.delivery_date
+    
     # Notify Agent about new order (NON-BLOCKING - fire and forget)
     asyncio.create_task(notify_antigravity_order_created(
         order_number=order_number,
@@ -740,7 +749,8 @@ async def create_order(order: OrderCreate):
         customer_name=customer_name,
         order_type=order.order_type,
         notes=order.description or order.voice_instructions or "",
-        amount=0  # Amount will be added via payment
+        amount=0,  # Amount will be added via payment
+        delivery_date=delivery_date_str
     ))
     
     return OrderResponse(**order_doc)
@@ -829,15 +839,24 @@ async def update_order_status(order_id: str, status: str):
         raise HTTPException(status_code=400, detail=f"Invalid status. Must be one of: {valid_statuses}")
     
     try:
+        # Get order details first for webhook
+        order = await db.orders.find_one({"_id": ObjectId(order_id)})
+        if not order:
+            raise HTTPException(status_code=404, detail="Order not found")
+        
         result = await db.orders.update_one(
             {"_id": ObjectId(order_id)},
             {"$set": {"status": status}}
         )
-        if result.matched_count == 0:
-            raise HTTPException(status_code=404, detail="Order not found")
         
-        # Notify Antigravity AI Agent about status update (NON-BLOCKING)
-        asyncio.create_task(notify_antigravity_status_update(order_id=order_id, status=status))
+        # Generate order number and notify Dashboard (NON-BLOCKING)
+        order_number = f"ORD-{order_id[-6:].upper()}"
+        asyncio.create_task(notify_antigravity_status_update(
+            order_number=order_number,
+            phone=order.get('customer_phone', ''),
+            new_status=status,
+            customer_name=order.get('customer_name', '')
+        ))
         
         return {"message": "Status updated successfully", "status": status}
     except Exception as e:
