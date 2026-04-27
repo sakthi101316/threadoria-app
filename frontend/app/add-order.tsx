@@ -275,6 +275,7 @@ export default function AddOrderScreen() {
         voice_instructions: voiceInstructions.trim(),
         auto_created_by_voice: false,
         amount: parseFloat(finalAmount) || 0,  // Include amount for webhook
+        advance_paid: parseFloat(advancePaid) || 0,  // Include advance paid for webhook
       });
       console.log('Order created:', order);
 

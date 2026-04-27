@@ -52,8 +52,8 @@ def fire_and_forget(coro):
     except Exception as e:
         logger.error(f"Fire and forget error: {e}")
 
-async def notify_antigravity_order_created(order_number: str, customer_phone: str, customer_name: str, order_type: str, notes: str, amount: float, delivery_date: str = ""):
-    """Send new order to MAAHIS Live Dashboard - INSTANT, NON-BLOCKING"""
+async def notify_antigravity_order_created(order_number: str, customer_phone: str, customer_name: str, order_type: str, notes: str, amount: float, delivery_date: str = "", advance_paid: float = 0):
+    """Send new order to MAAHIS Live Dashboard - INSTANT, NON-BLOCKING. Returns tracking link."""
     try:
         # Format phone number
         phone = customer_phone.replace("+", "").replace(" ", "") if customer_phone else ""
@@ -66,7 +66,8 @@ async def notify_antigravity_order_created(order_number: str, customer_phone: st
             "customer_name": customer_name,
             "item": order_type,
             "delivery_date": delivery_date,
-            "amount": int(amount) if amount else 0
+            "amount": int(amount) if amount else 0,
+            "advance_paid": int(advance_paid) if advance_paid else 0
         }
         
         logger.info(f"Sending to MAAHIS Dashboard: {payload}")
@@ -83,7 +84,13 @@ async def notify_antigravity_order_created(order_number: str, customer_phone: st
                 }
             )
             logger.info(f"Dashboard response: {response.status_code} - {response.text[:200]}")
-            return response.json() if response.status_code == 200 else None
+            
+            # Generate tracking link
+            tracking_link = f"{AGENT_BASE_URL}/track/{phone}/{order_number}"
+            
+            if response.status_code == 200:
+                return {"success": True, "tracking_link": tracking_link, "response": response.json()}
+            return {"success": False, "tracking_link": tracking_link}
     except Exception as e:
         logger.error(f"Failed to notify Dashboard (new order): {e}")
         return None
@@ -253,6 +260,7 @@ class OrderCreate(BaseModel):
     voice_instructions: Optional[str] = ""
     auto_created_by_voice: Optional[bool] = False
     amount: Optional[float] = 0  # Order amount for webhook
+    advance_paid: Optional[float] = 0  # Advance amount paid
 
 class OrderUpdate(BaseModel):
     measurement_id: Optional[str] = None
@@ -278,6 +286,7 @@ class OrderResponse(BaseModel):
     voice_instructions: str
     auto_created_by_voice: bool
     created_at: datetime
+    tracking_link: Optional[str] = None  # Tracking URL for order
 
 # Payment Models
 class PaymentCreate(BaseModel):
@@ -726,6 +735,11 @@ async def create_order(order: OrderCreate):
         customer_name = ""
         customer_phone = ""
     
+    # Format phone for tracking link
+    formatted_phone = customer_phone.replace("+", "").replace(" ", "") if customer_phone else ""
+    if formatted_phone and not formatted_phone.startswith("91"):
+        formatted_phone = "91" + formatted_phone
+    
     order_doc = {
         "customer_id": order.customer_id,
         "customer_name": customer_name,
@@ -741,14 +755,24 @@ async def create_order(order: OrderCreate):
         "voice_instructions": order.voice_instructions or "",
         "auto_created_by_voice": order.auto_created_by_voice or False,
         "amount": order.amount or 0,  # Store amount in order
+        "advance_paid": order.advance_paid or 0,  # Store advance paid
         "created_at": datetime.utcnow()
     }
     result = await db.orders.insert_one(order_doc)
     order_doc['id'] = str(result.inserted_id)
     
-    # Generate order number
+    # Generate order number and tracking link
     order_number = f"ORD-{str(result.inserted_id)[-6:].upper()}"
-    logger.info(f"Order created: {order_number}, ID: {order_doc['id']}")
+    tracking_link = f"{AGENT_BASE_URL}/track/{formatted_phone}/{order_number}"
+    order_doc['tracking_link'] = tracking_link
+    
+    # Update order with tracking link
+    await db.orders.update_one(
+        {"_id": result.inserted_id},
+        {"$set": {"tracking_link": tracking_link, "order_number": order_number}}
+    )
+    
+    logger.info(f"Order created: {order_number}, ID: {order_doc['id']}, Tracking: {tracking_link}")
     
     # Format delivery date for webhook
     delivery_date_str = ""
@@ -760,15 +784,16 @@ async def create_order(order: OrderCreate):
             delivery_date_str = order.delivery_date
     
     # Notify Agent about new order (NON-BLOCKING - fire and forget)
-    logger.info(f"=== FIRING WEBHOOK === Order: {order_number}, Phone: {customer_phone}, Amount: {order.amount or 0}")
+    logger.info(f"=== FIRING WEBHOOK === Order: {order_number}, Phone: {customer_phone}, Amount: {order.amount or 0}, Advance: {order.advance_paid or 0}")
     asyncio.create_task(notify_antigravity_order_created(
         order_number=order_number,
         customer_phone=customer_phone,
         customer_name=customer_name,
         order_type=order.order_type,
         notes=order.description or order.voice_instructions or "",
-        amount=order.amount or 0,  # Use amount from order
-        delivery_date=delivery_date_str
+        amount=order.amount or 0,
+        delivery_date=delivery_date_str,
+        advance_paid=order.advance_paid or 0  # Pass advance paid to webhook
     ))
     logger.info(f"=== WEBHOOK TASK CREATED === Order: {order_number}")
     
