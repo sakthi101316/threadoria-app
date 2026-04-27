@@ -70,9 +70,10 @@ async def notify_antigravity_order_created(order_number: str, customer_phone: st
             "advance_paid": int(advance_paid) if advance_paid else 0
         }
         
+        print(f"🔴 WEBHOOK POST to {AGENT_BASE_URL}/api/new-order with payload: {payload}")
         logger.info(f"Sending to MAAHIS Dashboard: {payload}")
         
-        async with httpx.AsyncClient(timeout=10.0) as http_client:
+        async with httpx.AsyncClient(timeout=30.0) as http_client:  # Increased timeout to 30s
             response = await http_client.post(
                 f"{AGENT_BASE_URL}/api/new-order",
                 json=payload,
@@ -83,6 +84,7 @@ async def notify_antigravity_order_created(order_number: str, customer_phone: st
                     "User-Agent": "MAAHIS-Webhook/1.0"
                 }
             )
+            print(f"🟢 WEBHOOK RESPONSE: {response.status_code}")
             logger.info(f"Dashboard response: {response.status_code} - {response.text[:200]}")
             
             # Generate tracking link
@@ -91,7 +93,12 @@ async def notify_antigravity_order_created(order_number: str, customer_phone: st
             if response.status_code == 200:
                 return {"success": True, "tracking_link": tracking_link, "response": response.json()}
             return {"success": False, "tracking_link": tracking_link}
+    except httpx.TimeoutException as e:
+        print(f"🔴 WEBHOOK TIMEOUT: {e}")
+        logger.error(f"Failed to notify Dashboard (new order) - TIMEOUT: {e}")
+        return None
     except Exception as e:
+        print(f"🔴 WEBHOOK ERROR: {e}")
         logger.error(f"Failed to notify Dashboard (new order): {e}")
         return None
 
@@ -784,6 +791,7 @@ async def create_order(order: OrderCreate):
             delivery_date_str = order.delivery_date
     
     # Notify Agent about new order (NON-BLOCKING - fire and forget)
+    print(f"🔴🔴🔴 WEBHOOK FIRING NOW for {order_number} to {AGENT_BASE_URL}/api/new-order 🔴🔴🔴")
     logger.info(f"=== FIRING WEBHOOK === Order: {order_number}, Phone: {customer_phone}, Amount: {order.amount or 0}, Advance: {order.advance_paid or 0}")
     asyncio.create_task(notify_antigravity_order_created(
         order_number=order_number,
@@ -795,6 +803,7 @@ async def create_order(order: OrderCreate):
         delivery_date=delivery_date_str,
         advance_paid=order.advance_paid or 0  # Pass advance paid to webhook
     ))
+    print(f"🟢🟢🟢 WEBHOOK TASK CREATED for {order_number} 🟢🟢🟢")
     logger.info(f"=== WEBHOOK TASK CREATED === Order: {order_number}")
     
     return OrderResponse(**order_doc)
