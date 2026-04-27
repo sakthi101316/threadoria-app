@@ -274,6 +274,7 @@ export default function AddOrderScreen() {
         delivery_date: deliveryDate.toISOString(),
         voice_instructions: voiceInstructions.trim(),
         auto_created_by_voice: false,
+        amount: parseFloat(finalAmount) || 0,  // Include amount for webhook
       });
       console.log('Order created:', order);
 

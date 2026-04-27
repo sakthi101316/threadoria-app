@@ -250,6 +250,7 @@ class OrderCreate(BaseModel):
     delivery_date: str  # ISO date string
     voice_instructions: Optional[str] = ""
     auto_created_by_voice: Optional[bool] = False
+    amount: Optional[float] = 0  # Order amount for webhook
 
 class OrderUpdate(BaseModel):
     measurement_id: Optional[str] = None
@@ -733,6 +734,7 @@ async def create_order(order: OrderCreate):
         "status": "received",
         "voice_instructions": order.voice_instructions or "",
         "auto_created_by_voice": order.auto_created_by_voice or False,
+        "amount": order.amount or 0,  # Store amount in order
         "created_at": datetime.utcnow()
     }
     result = await db.orders.insert_one(order_doc)
@@ -757,7 +759,7 @@ async def create_order(order: OrderCreate):
         customer_name=customer_name,
         order_type=order.order_type,
         notes=order.description or order.voice_instructions or "",
-        amount=0,  # Amount will be added via payment
+        amount=order.amount or 0,  # Use amount from order
         delivery_date=delivery_date_str
     ))
     
