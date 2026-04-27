@@ -709,6 +709,8 @@ async def delete_measurement(measurement_id: str):
 @api_router.post("/orders", response_model=OrderResponse)
 async def create_order(order: OrderCreate):
     """Create a new order"""
+    logger.info(f"=== CREATE ORDER START === Order type: {order.order_type}, Amount: {order.amount}")
+    
     # Get customer info
     user_id = None
     try:
@@ -716,7 +718,9 @@ async def create_order(order: OrderCreate):
         customer_name = customer.get("name", "") if customer else ""
         customer_phone = customer.get("phone", "") if customer else ""
         user_id = customer.get("user_id") if customer else None
-    except:
+        logger.info(f"Customer found: {customer_name}, Phone: {customer_phone}")
+    except Exception as e:
+        logger.error(f"Error getting customer: {e}")
         customer_name = ""
         customer_phone = ""
     
@@ -742,6 +746,7 @@ async def create_order(order: OrderCreate):
     
     # Generate order number
     order_number = f"ORD-{str(result.inserted_id)[-6:].upper()}"
+    logger.info(f"Order created: {order_number}, ID: {order_doc['id']}")
     
     # Format delivery date for webhook
     delivery_date_str = ""
@@ -753,6 +758,7 @@ async def create_order(order: OrderCreate):
             delivery_date_str = order.delivery_date
     
     # Notify Agent about new order (NON-BLOCKING - fire and forget)
+    logger.info(f"=== FIRING WEBHOOK === Order: {order_number}, Phone: {customer_phone}, Amount: {order.amount or 0}")
     asyncio.create_task(notify_antigravity_order_created(
         order_number=order_number,
         customer_phone=customer_phone,
@@ -762,6 +768,7 @@ async def create_order(order: OrderCreate):
         amount=order.amount or 0,  # Use amount from order
         delivery_date=delivery_date_str
     ))
+    logger.info(f"=== WEBHOOK TASK CREATED === Order: {order_number}")
     
     return OrderResponse(**order_doc)
 
