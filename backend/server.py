@@ -801,6 +801,8 @@ async def get_order(order_id: str, user_id: Optional[str] = None):
         if not order:
             raise HTTPException(status_code=404, detail="Order not found")
         return OrderResponse(**serialize_doc(order))
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions as-is
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 

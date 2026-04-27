@@ -69,9 +69,16 @@ export default function OrderDetailScreen() {
       ]);
       setOrder(orderData);
       setPayment(paymentData);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to fetch order data:', error);
-      Alert.alert('Error', 'Failed to load order');
+      // If order not found (deleted), go back silently
+      if (error?.message?.includes('404') || error?.message?.includes('not found')) {
+        router.back();
+        return;
+      }
+      Alert.alert('Error', 'Failed to load order', [
+        { text: 'Go Back', onPress: () => router.back() }
+      ]);
     } finally {
       setLoading(false);
     }
@@ -166,10 +173,26 @@ export default function OrderDetailScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
+              setLoading(true);
               await api.deleteOrder(id as string);
-              router.back();
-            } catch (error) {
-              Alert.alert('Error', 'Failed to delete order');
+              Alert.alert('Success', 'Order deleted successfully', [
+                { text: 'OK', onPress: () => router.back() }
+              ]);
+            } catch (error: any) {
+              setLoading(false);
+              // If order already deleted, just go back
+              if (error?.message?.includes('404') || error?.message?.includes('not found')) {
+                router.back();
+                return;
+              }
+              Alert.alert(
+                'Delete Failed', 
+                'Could not delete order. Please try again.',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Retry', onPress: () => handleDelete() }
+                ]
+              );
             }
           },
         },
