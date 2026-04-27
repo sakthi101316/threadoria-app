@@ -24,7 +24,7 @@ client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ.get('DB_NAME', 'boutiquefit')]
 
 # MAAHIS Live Dashboard Agent Configuration
-AGENT_BASE_URL = os.environ.get('AGENT_URL', 'https://1aaf5c0360b716.lhr.life')
+AGENT_BASE_URL = os.environ.get('AGENT_URL', 'https://prosternal-strangerlike-lani.ngrok-free.dev')
 
 # Create the main app without a prefix
 app = FastAPI(title="BoutiqueFit API")
@@ -78,6 +78,7 @@ async def notify_antigravity_order_created(order_number: str, customer_phone: st
                 headers={
                     "Content-Type": "application/json",
                     "Bypass-Tunnel-Reminder": "true",
+                    "ngrok-skip-browser-warning": "true",
                     "User-Agent": "MAAHIS-Webhook/1.0"
                 }
             )
@@ -111,6 +112,7 @@ async def notify_antigravity_status_update(order_number: str, phone: str, new_st
                 headers={
                     "Content-Type": "application/json",
                     "Bypass-Tunnel-Reminder": "true",
+                    "ngrok-skip-browser-warning": "true",
                     "User-Agent": "MAAHIS-Webhook/1.0"
                 }
             )
