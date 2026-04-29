@@ -62,6 +62,7 @@ async def notify_antigravity_order_created(order_number: str, customer_phone: st
             phone = "91" + phone
         
         payload = {
+            "type": "new_order",
             "order_number": order_number,
             "customer_phone": phone,
             "customer_name": customer_name,
@@ -71,17 +72,16 @@ async def notify_antigravity_order_created(order_number: str, customer_phone: st
             "advance_paid": int(advance_paid) if advance_paid else 0
         }
         
-        print(f"🔴 WEBHOOK POST to {AGENT_BASE_URL}/api/new-order with payload: {payload}")
+        print(f"🔴 WEBHOOK POST to {AGENT_BASE_URL}/webhook with payload: {payload}")
         logger.info(f"Sending to MAAHIS Dashboard: {payload}")
         
-        async with httpx.AsyncClient(timeout=30.0) as http_client:  # Increased timeout to 30s
+        async with httpx.AsyncClient(timeout=30.0) as http_client:
             response = await http_client.post(
-                f"{AGENT_BASE_URL}/api/new-order",
+                f"{AGENT_BASE_URL}/webhook",
                 json=payload,
                 headers={
                     "Content-Type": "application/json",
-                    "Bypass-Tunnel-Reminder": "true",
-                    "ngrok-skip-browser-warning": "true",
+                    "X-Verify-Token": WEBHOOK_VERIFY_TOKEN,
                     "User-Agent": "MAAHIS-Webhook/1.0"
                 }
             )
@@ -92,7 +92,7 @@ async def notify_antigravity_order_created(order_number: str, customer_phone: st
             tracking_link = f"{AGENT_BASE_URL}/track/{phone}/{order_number}"
             
             if response.status_code == 200:
-                return {"success": True, "tracking_link": tracking_link, "response": response.json()}
+                return {"success": True, "tracking_link": tracking_link, "response": response.text}
             return {"success": False, "tracking_link": tracking_link}
     except httpx.TimeoutException as e:
         print(f"🔴 WEBHOOK TIMEOUT: {e}")
@@ -112,6 +112,7 @@ async def notify_antigravity_status_update(order_number: str, phone: str, new_st
             formatted_phone = "91" + formatted_phone
             
         payload = {
+            "type": "status_update",
             "order_number": order_number,
             "phone": formatted_phone,
             "new_status": new_status,
@@ -120,19 +121,18 @@ async def notify_antigravity_status_update(order_number: str, phone: str, new_st
         
         logger.info(f"Sending status update to Dashboard: {payload}")
         
-        async with httpx.AsyncClient(timeout=10.0) as http_client:
+        async with httpx.AsyncClient(timeout=30.0) as http_client:
             response = await http_client.post(
-                f"{AGENT_BASE_URL}/api/status-update",
+                f"{AGENT_BASE_URL}/webhook",
                 json=payload,
                 headers={
                     "Content-Type": "application/json",
-                    "Bypass-Tunnel-Reminder": "true",
-                    "ngrok-skip-browser-warning": "true",
+                    "X-Verify-Token": WEBHOOK_VERIFY_TOKEN,
                     "User-Agent": "MAAHIS-Webhook/1.0"
                 }
             )
             logger.info(f"Status update response: {response.status_code} - {response.text[:200]}")
-            return response.json() if response.status_code == 200 else None
+            return response.text if response.status_code == 200 else None
     except Exception as e:
         logger.error(f"Failed to notify Dashboard (status update): {e}")
         return None
