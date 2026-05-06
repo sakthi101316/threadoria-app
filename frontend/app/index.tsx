@@ -114,7 +114,7 @@ export default function LoginScreen() {
           <View style={styles.splashContent}>
             <Animated.View style={[styles.splashLogoCircle, { transform: [{ scale: scaleAnim }] }]}>
               <Image 
-                source={require('../assets/maahis-logo.png')} 
+                source={require('../assets/threadoria-logo.png')} 
                 style={styles.splashLogo}
                 resizeMode="contain"
               />
@@ -144,7 +144,7 @@ export default function LoginScreen() {
             <View style={styles.logoSection}>
               <View style={styles.logoContainer}>
                 <Image 
-                  source={require('../assets/maahis-logo.png')} 
+                  source={require('../assets/threadoria-logo.png')} 
                   style={styles.mainLogo}
                   resizeMode="contain"
                 />
@@ -202,8 +202,8 @@ export default function LoginScreen() {
                 style={styles.loginButton}
               />
 
-              <View style={styles.registerContainer}>
-                <Text style={styles.registerText}>New to MAAHIS?</Text>
+            <View style={styles.registerContainer}>
+                <Text style={styles.registerText}>New to Threadoria?</Text>
                 <TouchableOpacity onPress={() => router.push('/register')}>
                   <Text style={styles.registerLink}>Create Account</Text>
                 </TouchableOpacity>
@@ -212,7 +212,7 @@ export default function LoginScreen() {
 
             {/* Footer */}
             <View style={styles.footerContainer}>
-              <Text style={styles.poweredByText}>MAAHIS Designer Boutique</Text>
+              <Text style={styles.poweredByText}>Stitched with Love, Created by Sisters</Text>
               <Text style={styles.versionText}>v{APP_CONFIG.version}</Text>
             </View>
           </ScrollView>

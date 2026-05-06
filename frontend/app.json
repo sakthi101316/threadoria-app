@@ -1,34 +1,34 @@
 {
   "expo": {
-    "name": "MAAHIS",
-    "slug": "maahis",
+    "name": "Threadoria",
+    "slug": "threadoria",
     "version": "2.0.0",
     "orientation": "portrait",
-    "icon": "./assets/maahis-icon.png",
-    "scheme": "maahis",
+    "icon": "./assets/threadoria-logo.png",
+    "scheme": "threadoria",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.maahis.boutique"
+      "bundleIdentifier": "com.threadoria.boutique"
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/maahis-icon.png",
-        "backgroundColor": "#000000"
+        "foregroundImage": "./assets/threadoria-logo.png",
+        "backgroundColor": "#FDF6E9"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.maahis.boutique"
+      "package": "com.threadoria.boutique"
     },
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/maahis-icon.png",
-      "name": "MAAHIS Designer Boutique",
-      "shortName": "MAAHIS",
-      "description": "Premium boutique management app - Where Elegance Meets Perfection",
-      "backgroundColor": "#000000",
-      "themeColor": "#000000",
+      "favicon": "./assets/threadoria-logo.png",
+      "name": "Threadoria - Stitched with Love",
+      "shortName": "Threadoria",
+      "description": "Stitched with Love, Created by Sisters - Premium boutique management app",
+      "backgroundColor": "#FDF6E9",
+      "themeColor": "#8B4513",
       "startUrl": "/",
       "display": "standalone",
       "orientation": "portrait"
@@ -38,10 +38,10 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/maahis-icon.png",
+          "image": "./assets/threadoria-logo.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#000000"
+          "backgroundColor": "#FDF6E9"
         }
       ],
       "@react-native-community/datetimepicker",

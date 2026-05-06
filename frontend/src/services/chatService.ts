@@ -1,4 +1,4 @@
-// Claude AI Chat Service - Powered by MAAHIS AI
+// Claude AI Chat Service - Powered by Threadoria AI
 import Constants from 'expo-constants';
 
 const getBackendUrl = () => {

@@ -1,10 +1,10 @@
-// MAAHIS Designer Boutique - Premium Tailoring Management App
+// Threadoria - Stitched with Love, Created by Sisters
 export const COLORS = {
-  primary: '#8B1538',        // Deep Burgundy (matches logo)
+  primary: '#8B4513',        // Warm Brown (matches logo)
   secondary: '#D4AF37',      // Gold
   accent: '#C9A050',         // Light Gold Accent
   gold: '#D4AF37',           // Rich Gold
-  cream: '#FDF8F3',          // Warm Cream Background
+  cream: '#FDF6E9',          // Warm Cream Background
   white: '#FFFFFF',
   black: '#2D2D2D',          // Soft Black for text
   gray: '#6B7280',
@@ -24,8 +24,8 @@ export const COLORS = {
 };
 
 export const APP_CONFIG = {
-  name: 'MAAHIS',
-  tagline: 'Designer Boutique',
+  name: 'Threadoria',
+  tagline: 'Stitched with Love, Created by Sisters',
   version: '2.0.0',
 };
 

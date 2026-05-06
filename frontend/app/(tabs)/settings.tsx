@@ -119,8 +119,8 @@ export default function SettingsScreen() {
 
         {/* Footer */}
         <View style={styles.footer}>
-          <Text style={styles.footerText}>{user?.boutique_name || 'Boutique'}</Text>
-          <Text style={styles.footerSubtext}>"Where Elegance Meets Perfection"</Text>
+          <Text style={styles.footerText}>Threadoria</Text>
+          <Text style={styles.footerSubtext}>"Stitched with Love, Created by Sisters"</Text>
         </View>
       </ScrollView>
 

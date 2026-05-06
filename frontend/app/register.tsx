@@ -107,7 +107,7 @@ export default function RegisterScreen() {
       if (result.success) {
         Alert.alert(
           'Registration Successful!', 
-          'Welcome to MAAHIS! Please login with your phone number and PIN.',
+          'Welcome to Threadoria! Please login with your phone number and PIN.',
           [{ text: 'Login Now', onPress: () => router.replace('/') }]
         );
       } else {
