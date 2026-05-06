@@ -2,6 +2,7 @@
   "expo": {
     "name": "Threadoria",
     "slug": "threadoria",
+    "owner": "shivom1010",
     "version": "2.0.0",
     "orientation": "portrait",
     "icon": "./assets/threadoria-logo.png",
