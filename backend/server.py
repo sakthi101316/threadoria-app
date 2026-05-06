@@ -487,20 +487,22 @@ async def login(credentials: UserLogin):
     identifier = credentials.email.lower()
     
     # ============================================================
-    # TEMPORARY RESTRICTION - INTERNAL USE ONLY
-    # Added: January 2025
-    # Remove this block after one month to restore public access
     # ============================================================
-    ALLOWED_MOBILE = "8608080103"
-    ALLOWED_PIN = "101316"
+    # ALLOWED USERS - INTERNAL USE ONLY
+    # ============================================================
+    ALLOWED_USERS = {
+        "8608080103": "101316",  # MAAHIS
+        "9944151122": "994415",  # NEETUS
+    }
     
-    if identifier != ALLOWED_MOBILE or credentials.pin != ALLOWED_PIN:
+    # Check if user is in allowed list
+    if identifier not in ALLOWED_USERS or credentials.pin != ALLOWED_USERS.get(identifier):
         return UserResponse(
             success=False,
             message="This application is temporarily restricted for internal use only."
         )
     # ============================================================
-    # END OF TEMPORARY RESTRICTION
+    # END OF ALLOWED USERS CHECK
     # ============================================================
     
     # Check in database by email or phone
