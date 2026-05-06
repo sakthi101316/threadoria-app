@@ -139,7 +139,7 @@ export default function DashboardScreen() {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.logoContainer}>
-          <Text style={styles.headerTitle}>MAAHIS</Text>
+          <Text style={styles.headerTitle}>{user?.boutique_name || 'Boutique'}</Text>
         </View>
         <TouchableOpacity 
           style={styles.headerButton}
