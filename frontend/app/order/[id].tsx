@@ -151,14 +151,29 @@ export default function OrderDetailScreen() {
           break;
       }
       
-      const canOpen = await Linking.canOpenURL(response.url);
-      if (canOpen) {
-        await Linking.openURL(response.url);
-      } else {
-        Alert.alert('Error', 'WhatsApp is not installed');
-      }
+      // Directly open WhatsApp URL - canOpenURL may fail due to Android query permissions
+      await Linking.openURL(response.url);
     } catch (error) {
-      Alert.alert('Error', 'Failed to open WhatsApp');
+      // If opening fails, try web fallback
+      try {
+        let response;
+        switch (type) {
+          case 'confirmation':
+            response = await api.getWhatsAppOrderConfirmation(id as string);
+            break;
+          case 'delivery':
+            response = await api.getWhatsAppDeliveryReminder(id as string);
+            break;
+          case 'balance':
+            response = await api.getWhatsAppBalanceReminder(id as string);
+            break;
+        }
+        // Try web WhatsApp as fallback
+        const webUrl = response.url.replace('whatsapp://', 'https://wa.me/').replace('send?phone=', '');
+        await Linking.openURL(webUrl);
+      } catch (fallbackError) {
+        Alert.alert('Error', 'Could not open WhatsApp. Please make sure WhatsApp is installed.');
+      }
     }
   };
 
