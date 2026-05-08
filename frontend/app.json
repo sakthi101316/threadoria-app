@@ -4,11 +4,19 @@
     "slug": "threadoria",
     "owner": "shivom1010",
     "version": "2.0.0",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "orientation": "portrait",
     "icon": "./assets/threadoria-logo.png",
     "scheme": "threadoria",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "updates": {
+      "url": "https://u.expo.dev/shivom1010/threadoria",
+      "enabled": true,
+      "fallbackToCacheTimeout": 0
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.threadoria.boutique"
