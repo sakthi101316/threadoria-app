@@ -93,10 +93,19 @@ export default function LoginScreen() {
         // Navigate to tabs after successful login
         router.replace('/(tabs)');
       } else {
-        Alert.alert('Login Failed', result.message);
+        Alert.alert('Login Failed', result.message || 'Invalid credentials. Please try again.');
       }
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Login failed');
+      // User-friendly error messages
+      let errorMessage = 'Login failed. Please try again.';
+      if (error.message?.includes('Network') || error.message?.includes('fetch')) {
+        errorMessage = 'No internet connection. Please check your network and try again.';
+      } else if (error.message?.includes('JSON') || error.message?.includes('parse')) {
+        errorMessage = 'Server error. Please try again in a moment.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      Alert.alert('Login Failed', errorMessage);
     } finally {
       setLoginLoading(false);
     }
