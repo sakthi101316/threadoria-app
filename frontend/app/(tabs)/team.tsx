@@ -21,7 +21,7 @@ import { GoldButton } from '../../src/components/GoldButton';
 import { useAuth } from '../../src/context/AuthContext';
 import { api } from '../../src/services/api';
 
-// Use same base URL as api service
+// Use same base URL as api service - with guaranteed fallback
 const API_BASE = process.env.EXPO_PUBLIC_BACKEND_URL || 'https://boutiquefit-staging.preview.emergentagent.com';
 
 interface Assignment {
@@ -70,6 +70,7 @@ export default function TeamScreen() {
   // Add staff form
   const [newStaffName, setNewStaffName] = useState('');
   const [newStaffRole, setNewStaffRole] = useState<'master' | 'tailor'>('tailor');
+  const [addingStaff, setAddingStaff] = useState(false);
   
   // Assign form
   const [orders, setOrders] = useState<Order[]>([]);
@@ -81,12 +82,20 @@ export default function TeamScreen() {
 
   const fetchReport = async () => {
     try {
-      const response = await fetch(`${API_BASE}/api/staff/report?boutique=${user?.user_id}`);
+      console.log('Fetching staff report for:', user?.user_id);
+      console.log('API_BASE:', API_BASE);
+      const url = `${API_BASE}/api/staff/report?boutique=${user?.user_id}`;
+      console.log('Fetching from URL:', url);
+      
+      const response = await fetch(url);
+      console.log('Response status:', response.status);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('Staff report data:', JSON.stringify(data));
         setReport(data);
       } else {
-        // If no data, set empty report
+        console.log('Response not OK, setting empty report');
         setReport({
           masters_count: 0,
           tailors_active: 0,
@@ -143,9 +152,13 @@ export default function TeamScreen() {
       return;
     }
 
+    setAddingStaff(true);
     try {
       console.log('Adding staff:', newStaffName, newStaffRole, user?.user_id);
-      const response = await fetch(`${API_BASE}/api/staff/add`, {
+      const url = `${API_BASE}/api/staff/add`;
+      console.log('Add staff URL:', url);
+      
+      const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -157,19 +170,23 @@ export default function TeamScreen() {
 
       console.log('Add staff response status:', response.status);
       const data = await response.json();
-      console.log('Add staff response:', data);
+      console.log('Add staff response:', JSON.stringify(data));
 
       if (response.ok && data.success) {
-        setShowAddStaffModal(false);
         setNewStaffName('');
-        await fetchReport(); // Wait for refresh
-        Alert.alert('Success', 'Staff member added!');
+        setShowAddStaffModal(false);
+        // Force refresh the list
+        setLoading(true);
+        await fetchReport();
+        Alert.alert('Success', `${newStaffRole === 'master' ? 'Master' : 'Tailor'} "${newStaffName}" added successfully!`);
       } else {
         throw new Error(data.detail || 'Failed to add staff');
       }
     } catch (error: any) {
       console.error('Add staff error:', error);
       Alert.alert('Error', error.message || 'Failed to add staff member');
+    } finally {
+      setAddingStaff(false);
     }
   };
 
