@@ -386,6 +386,14 @@ export default function TeamScreen() {
         }
         showsVerticalScrollIndicator={false}
       >
+        {/* Debug Info - TEMPORARY */}
+        <View style={{ backgroundColor: '#FFE4B5', padding: 10, marginBottom: 10, borderRadius: 8 }}>
+          <Text style={{ fontSize: 12, color: '#8B4513' }}>DEBUG: API={API_BASE}</Text>
+          <Text style={{ fontSize: 12, color: '#8B4513' }}>User ID: {user?.user_id || 'none'}</Text>
+          <Text style={{ fontSize: 12, color: '#8B4513' }}>Masters: {report?.masters?.length || 0}, Tailors: {report?.tailors?.length || 0}</Text>
+          <Text style={{ fontSize: 12, color: '#8B4513' }}>Report: {report ? 'loaded' : 'null'}</Text>
+        </View>
+
         {/* Summary Bar */}
         <View style={styles.summaryBar}>
           <View style={styles.summaryItem}>
