@@ -21,8 +21,12 @@ import { GoldButton } from '../../src/components/GoldButton';
 import { useAuth } from '../../src/context/AuthContext';
 import { api } from '../../src/services/api';
 
-// Railway API base URL
-const RAILWAY_API = 'https://maahis-production.up.railway.app';
+import Constants from 'expo-constants';
+
+// Use Python backend API (same as other endpoints)
+const API_BASE = Constants.expoConfig?.extra?.EXPO_PUBLIC_BACKEND_URL || 
+                 process.env.EXPO_PUBLIC_BACKEND_URL || 
+                 'https://boutiquefit-staging.preview.emergentagent.com';
 
 interface Assignment {
   id: string;
@@ -81,7 +85,7 @@ export default function TeamScreen() {
 
   const fetchReport = async () => {
     try {
-      const response = await fetch(`${RAILWAY_API}/api/staff/report?boutique=${user?.user_id}`);
+      const response = await fetch(`${API_BASE}/api/staff/report?boutique=${user?.user_id}`);
       if (response.ok) {
         const data = await response.json();
         setReport(data);
@@ -144,7 +148,7 @@ export default function TeamScreen() {
     }
 
     try {
-      const response = await fetch(`${RAILWAY_API}/api/staff/add`, {
+      const response = await fetch(`${API_BASE}/api/staff/add`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -178,7 +182,7 @@ export default function TeamScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              const response = await fetch(`${RAILWAY_API}/api/staff/${staffId}`, {
+              const response = await fetch(`${API_BASE}/api/staff/${staffId}`, {
                 method: 'DELETE',
               });
               if (response.ok) {
@@ -211,7 +215,7 @@ export default function TeamScreen() {
     }
 
     try {
-      const response = await fetch(`${RAILWAY_API}/api/staff/assign`, {
+      const response = await fetch(`${API_BASE}/api/staff/assign`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -239,7 +243,7 @@ export default function TeamScreen() {
 
   const handleMarkDone = async (assignmentId: string) => {
     try {
-      const response = await fetch(`${RAILWAY_API}/api/staff/assignment/${assignmentId}`, {
+      const response = await fetch(`${API_BASE}/api/staff/assignment/${assignmentId}`, {
         method: 'DELETE',
       });
       if (response.ok) {

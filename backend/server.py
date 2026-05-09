@@ -1734,6 +1734,164 @@ async def clear_claude_chat(phone: str):
         del chat_sessions[session_id]
     return {"status": "success", "message": "Chat history cleared"}
 
+# ========================== STAFF MANAGEMENT ==========================
+
+class StaffCreate(BaseModel):
+    name: str
+    role: str  # 'master' or 'tailor'
+    boutique_id: str
+
+class StaffAssign(BaseModel):
+    staff_id: str
+    order_number: str
+    customer_name: str
+    garment_type: str
+    stage: str  # 'Cutting', 'Stitching', 'Assigned'
+    notes: Optional[str] = ""
+    boutique_id: str
+
+@api_router.get("/staff/report")
+async def get_staff_report(boutique: str):
+    """Get staff report with all masters, tailors and their assignments"""
+    try:
+        # Get all staff for this boutique
+        staff_cursor = db.staff.find({"boutique_id": boutique})
+        all_staff = await staff_cursor.to_list(100)
+        
+        masters = []
+        tailors = []
+        done_today = 0
+        
+        # Get today's completed count
+        today_start = datetime.combine(date.today(), datetime.min.time())
+        completed_cursor = db.staff_completed.find({
+            "boutique_id": boutique,
+            "completed_at": {"$gte": today_start}
+        })
+        done_today = await db.staff_completed.count_documents({
+            "boutique_id": boutique,
+            "completed_at": {"$gte": today_start}
+        })
+        
+        for staff in all_staff:
+            # Get assignments for this staff
+            assignments_cursor = db.staff_assignments.find({"staff_id": str(staff["_id"])})
+            assignments = await assignments_cursor.to_list(50)
+            
+            staff_data = {
+                "id": str(staff["_id"]),
+                "name": staff["name"],
+                "role": staff["role"],
+                "pieces_in_hand": len(assignments),
+                "assignments": [
+                    {
+                        "id": str(a["_id"]),
+                        "order_number": a.get("order_number", ""),
+                        "customer_name": a.get("customer_name", ""),
+                        "garment_type": a.get("garment_type", ""),
+                        "stage": a.get("stage", "Assigned"),
+                        "notes": a.get("notes", "")
+                    }
+                    for a in assignments
+                ]
+            }
+            
+            if staff["role"] == "master":
+                masters.append(staff_data)
+            else:
+                tailors.append(staff_data)
+        
+        return {
+            "masters_count": len(masters),
+            "tailors_active": len(tailors),
+            "done_today": done_today,
+            "masters": masters,
+            "tailors": tailors
+        }
+    except Exception as e:
+        logger.error(f"Staff report error: {e}")
+        return {
+            "masters_count": 0,
+            "tailors_active": 0,
+            "done_today": 0,
+            "masters": [],
+            "tailors": []
+        }
+
+@api_router.post("/staff/add")
+async def add_staff(staff: StaffCreate):
+    """Add a new staff member"""
+    try:
+        staff_doc = {
+            "name": staff.name,
+            "role": staff.role,
+            "boutique_id": staff.boutique_id,
+            "created_at": datetime.utcnow()
+        }
+        result = await db.staff.insert_one(staff_doc)
+        return {"success": True, "id": str(result.inserted_id)}
+    except Exception as e:
+        logger.error(f"Add staff error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.delete("/staff/{staff_id}")
+async def delete_staff(staff_id: str):
+    """Remove a staff member"""
+    try:
+        # Delete staff
+        await db.staff.delete_one({"_id": ObjectId(staff_id)})
+        # Delete their assignments
+        await db.staff_assignments.delete_many({"staff_id": staff_id})
+        return {"success": True}
+    except Exception as e:
+        logger.error(f"Delete staff error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/staff/assign")
+async def assign_work(assignment: StaffAssign):
+    """Assign work to a staff member"""
+    try:
+        assignment_doc = {
+            "staff_id": assignment.staff_id,
+            "order_number": assignment.order_number,
+            "customer_name": assignment.customer_name,
+            "garment_type": assignment.garment_type,
+            "stage": assignment.stage,
+            "notes": assignment.notes,
+            "boutique_id": assignment.boutique_id,
+            "assigned_at": datetime.utcnow()
+        }
+        result = await db.staff_assignments.insert_one(assignment_doc)
+        return {"success": True, "id": str(result.inserted_id)}
+    except Exception as e:
+        logger.error(f"Assign work error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.delete("/staff/assignment/{assignment_id}")
+async def mark_assignment_done(assignment_id: str):
+    """Mark an assignment as done (removes it and records completion)"""
+    try:
+        # Get the assignment first
+        assignment = await db.staff_assignments.find_one({"_id": ObjectId(assignment_id)})
+        if assignment:
+            # Record completion
+            completion_doc = {
+                "staff_id": assignment.get("staff_id"),
+                "order_number": assignment.get("order_number"),
+                "customer_name": assignment.get("customer_name"),
+                "garment_type": assignment.get("garment_type"),
+                "boutique_id": assignment.get("boutique_id"),
+                "completed_at": datetime.utcnow()
+            }
+            await db.staff_completed.insert_one(completion_doc)
+        
+        # Delete the assignment
+        await db.staff_assignments.delete_one({"_id": ObjectId(assignment_id)})
+        return {"success": True}
+    except Exception as e:
+        logger.error(f"Mark done error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # Include the router in the main app
 app.include_router(api_router)
 
