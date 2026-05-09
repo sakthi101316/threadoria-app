@@ -179,12 +179,26 @@ export default function AddCustomerScreen() {
       
       if (hasTopMeasurements || hasBottomMeasurements) {
         console.log('Saving measurements...');
-        await api.createMeasurement({
-          customer_id: customer.id,
-          top: topMeasurements,
-          bottom: bottomMeasurements,
-          reference_photos: [],
-        });
+        // Save top measurements if any
+        if (hasTopMeasurements) {
+          await api.createMeasurement({
+            customer_id: customer.id,
+            category: 'Top',
+            top_measurements: topMeasurements,
+            bottom_measurements: null,
+            reference_photos: [],
+          });
+        }
+        // Save bottom measurements if any
+        if (hasBottomMeasurements) {
+          await api.createMeasurement({
+            customer_id: customer.id,
+            category: 'Bottom',
+            top_measurements: null,
+            bottom_measurements: bottomMeasurements,
+            reference_photos: [],
+          });
+        }
         console.log('Measurements saved!');
       }
       
@@ -193,7 +207,15 @@ export default function AddCustomerScreen() {
       ]);
     } catch (error: any) {
       console.error('Error creating customer:', error);
-      Alert.alert('Error', error.message || 'Failed to add customer');
+      let errorMessage = 'Failed to add customer';
+      if (typeof error === 'string') {
+        errorMessage = error;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      } else if (error?.detail) {
+        errorMessage = typeof error.detail === 'string' ? error.detail : JSON.stringify(error.detail);
+      }
+      Alert.alert('Error', errorMessage);
     } finally {
       setLoading(false);
     }
