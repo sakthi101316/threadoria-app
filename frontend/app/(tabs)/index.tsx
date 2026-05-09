@@ -247,11 +247,11 @@ export default function DashboardScreen() {
             onPress={() => router.push('/(tabs)/billing')}
           />
           <QuickAction
-            title="Search"
-            icon="search"
-            IconComponent={Feather}
-            gradient={['#8B5CF6', '#7C3AED']}
-            onPress={() => router.push('/search')}
+            title="Team"
+            icon="account-group"
+            IconComponent={MaterialCommunityIcons}
+            gradient={['#6366F1', '#4F46E5']}
+            onPress={() => router.push('/(tabs)/team')}
           />
         </View>
       </ScrollView>
