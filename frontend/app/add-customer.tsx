@@ -34,6 +34,69 @@ export default function AddCustomerScreen() {
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [activeField, setActiveField] = useState<string | null>(null);
+  const [showMeasurements, setShowMeasurements] = useState(false);
+  const [measurementCategory, setMeasurementCategory] = useState<'Top' | 'Bottom'>('Top');
+  
+  // Measurement states
+  const [topMeasurements, setTopMeasurements] = useState({
+    full_length: '',
+    shoulder: '',
+    upper_chest: '',
+    bust: '',
+    waist: '',
+    front_deep: '',
+    back_deep: '',
+    sleeve_length: '',
+    sleeve_round: '',
+    arm_hole: '',
+    biceps: '',
+    dot_point: '',
+    dot_to_dot: '',
+    slit_length: '',
+    seat_round: '',
+  });
+
+  const [bottomMeasurements, setBottomMeasurements] = useState({
+    length: '',
+    hip_round: '',
+    thighs: '',
+    knees: '',
+    ankle: '',
+  });
+
+  const topFields = [
+    { key: 'full_length', label: 'Full Length' },
+    { key: 'shoulder', label: 'Shoulder' },
+    { key: 'upper_chest', label: 'Upper Chest' },
+    { key: 'bust', label: 'Bust' },
+    { key: 'waist', label: 'Waist' },
+    { key: 'front_deep', label: 'Front Deep' },
+    { key: 'back_deep', label: 'Back Deep' },
+    { key: 'sleeve_length', label: 'Sleeve Length' },
+    { key: 'sleeve_round', label: 'Sleeve Around' },
+    { key: 'arm_hole', label: 'Arm Hole' },
+    { key: 'biceps', label: 'Biceps' },
+    { key: 'dot_point', label: 'Dot Point' },
+    { key: 'dot_to_dot', label: 'Dot to Dot' },
+    { key: 'slit_length', label: 'Slit Length' },
+    { key: 'seat_round', label: 'Seat Round' },
+  ];
+
+  const bottomFields = [
+    { key: 'length', label: 'Length' },
+    { key: 'hip_round', label: 'Hip Round' },
+    { key: 'thighs', label: 'Thighs' },
+    { key: 'knees', label: 'Knees' },
+    { key: 'ankle', label: 'Ankle' },
+  ];
+
+  const handleTopMeasurementChange = (key: string, value: string) => {
+    setTopMeasurements(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleBottomMeasurementChange = (key: string, value: string) => {
+    setBottomMeasurements(prev => ({ ...prev, [key]: value }));
+  };
 
   const pickImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -100,7 +163,7 @@ export default function AddCustomerScreen() {
     setLoading(true);
     try {
       console.log('Creating customer...');
-      await api.createCustomer({
+      const customer = await api.createCustomer({
         name: name.trim(),
         phone: phone.trim(),
         address: address.trim(),
@@ -109,6 +172,22 @@ export default function AddCustomerScreen() {
         user_id: user?.user_id || null,
       });
       console.log('Customer created successfully!');
+      
+      // If measurements were added, save them too
+      const hasTopMeasurements = Object.values(topMeasurements).some(v => v !== '');
+      const hasBottomMeasurements = Object.values(bottomMeasurements).some(v => v !== '');
+      
+      if (hasTopMeasurements || hasBottomMeasurements) {
+        console.log('Saving measurements...');
+        await api.createMeasurement({
+          customer_id: customer.id,
+          top: topMeasurements,
+          bottom: bottomMeasurements,
+          reference_photos: [],
+        });
+        console.log('Measurements saved!');
+      }
+      
       Alert.alert('Success', 'Customer added successfully!', [
         { text: 'OK', onPress: () => router.back() },
       ]);
@@ -272,6 +351,89 @@ export default function AddCustomerScreen() {
               </View>
             )}
 
+            {/* Measurements Section */}
+            <TouchableOpacity 
+              style={styles.measurementToggle}
+              onPress={() => setShowMeasurements(!showMeasurements)}
+            >
+              <View style={styles.measurementToggleLeft}>
+                <MaterialCommunityIcons name="tape-measure" size={24} color={COLORS.primary} />
+                <Text style={styles.measurementToggleText}>Add Measurements</Text>
+              </View>
+              <Ionicons 
+                name={showMeasurements ? "chevron-up" : "chevron-down"} 
+                size={24} 
+                color={COLORS.gray} 
+              />
+            </TouchableOpacity>
+
+            {showMeasurements && (
+              <View style={styles.measurementSection}>
+                {/* Category Tabs */}
+                <View style={styles.categoryTabs}>
+                  <TouchableOpacity
+                    style={[styles.categoryTab, measurementCategory === 'Top' && styles.categoryTabActive]}
+                    onPress={() => setMeasurementCategory('Top')}
+                  >
+                    <MaterialCommunityIcons 
+                      name="tshirt-crew" 
+                      size={20} 
+                      color={measurementCategory === 'Top' ? COLORS.white : COLORS.gray} 
+                    />
+                    <Text style={[styles.categoryTabText, measurementCategory === 'Top' && styles.categoryTabTextActive]}>
+                      Top
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.categoryTab, measurementCategory === 'Bottom' && styles.categoryTabActive]}
+                    onPress={() => setMeasurementCategory('Bottom')}
+                  >
+                    <MaterialCommunityIcons 
+                      name="tshirt-v" 
+                      size={20} 
+                      color={measurementCategory === 'Bottom' ? COLORS.white : COLORS.gray} 
+                    />
+                    <Text style={[styles.categoryTabText, measurementCategory === 'Bottom' && styles.categoryTabTextActive]}>
+                      Bottom
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Measurement Fields */}
+                <View style={styles.measurementGrid}>
+                  {measurementCategory === 'Top' ? (
+                    topFields.map((field) => (
+                      <View key={field.key} style={styles.measurementInput}>
+                        <Text style={styles.measurementLabel}>{field.label}</Text>
+                        <TextInput
+                          style={styles.measurementInputField}
+                          placeholder="0"
+                          placeholderTextColor={COLORS.gray}
+                          value={topMeasurements[field.key as keyof typeof topMeasurements]}
+                          onChangeText={(v) => handleTopMeasurementChange(field.key, v)}
+                          keyboardType="numeric"
+                        />
+                      </View>
+                    ))
+                  ) : (
+                    bottomFields.map((field) => (
+                      <View key={field.key} style={styles.measurementInput}>
+                        <Text style={styles.measurementLabel}>{field.label}</Text>
+                        <TextInput
+                          style={styles.measurementInputField}
+                          placeholder="0"
+                          placeholderTextColor={COLORS.gray}
+                          value={bottomMeasurements[field.key as keyof typeof bottomMeasurements]}
+                          onChangeText={(v) => handleBottomMeasurementChange(field.key, v)}
+                          keyboardType="numeric"
+                        />
+                      </View>
+                    ))
+                  )}
+                </View>
+              </View>
+            )}
+
             <GoldButton
               title="Add Customer"
               onPress={handleSubmit}
@@ -389,5 +551,82 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     marginTop: SPACING.lg,
+  },
+  measurementToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.sm,
+    backgroundColor: COLORS.cream,
+    borderRadius: BORDER_RADIUS.md,
+    marginTop: SPACING.md,
+    marginBottom: SPACING.sm,
+  },
+  measurementToggleLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+  },
+  measurementToggleText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.primary,
+  },
+  measurementSection: {
+    marginTop: SPACING.sm,
+    paddingTop: SPACING.md,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.lightGray,
+  },
+  categoryTabs: {
+    flexDirection: 'row',
+    marginBottom: SPACING.md,
+    gap: SPACING.sm,
+  },
+  categoryTab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: SPACING.sm,
+    borderRadius: BORDER_RADIUS.md,
+    backgroundColor: COLORS.cream,
+    gap: SPACING.xs,
+  },
+  categoryTabActive: {
+    backgroundColor: COLORS.primary,
+  },
+  categoryTabText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.gray,
+  },
+  categoryTabTextActive: {
+    color: COLORS.white,
+  },
+  measurementGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  measurementInput: {
+    width: '48%',
+    marginBottom: SPACING.md,
+  },
+  measurementLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.gray,
+    marginBottom: SPACING.xs,
+  },
+  measurementInputField: {
+    backgroundColor: COLORS.white,
+    borderWidth: 1,
+    borderColor: COLORS.lightGray,
+    borderRadius: BORDER_RADIUS.md,
+    padding: SPACING.sm,
+    fontSize: 16,
+    color: COLORS.black,
   },
 });

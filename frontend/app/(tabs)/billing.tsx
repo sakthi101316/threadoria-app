@@ -62,6 +62,7 @@ export default function BillingScreen() {
   const [showRecordPaymentModal, setShowRecordPaymentModal] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<PaymentRecord | null>(null);
   const [paymentAmount, setPaymentAmount] = useState('');
+  const [showWhatsAppOptions, setShowWhatsAppOptions] = useState<string | null>(null);
 
   const periods = [
     { key: 'today', label: 'Today' },
@@ -159,6 +160,27 @@ export default function BillingScreen() {
     }
   };
 
+  const handleWhatsAppOption = async (payment: PaymentRecord, type: 'confirmation' | 'delivery' | 'balance') => {
+    try {
+      let response;
+      switch (type) {
+        case 'confirmation':
+          response = await api.getWhatsAppOrderConfirmation(payment.order_id);
+          break;
+        case 'delivery':
+          response = await api.getWhatsAppDeliveryReminder(payment.order_id);
+          break;
+        case 'balance':
+          response = await api.getWhatsAppBalanceReminder(payment.order_id);
+          break;
+      }
+      await Linking.openURL(response.url);
+      setShowWhatsAppOptions(null);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to open WhatsApp');
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'paid': return COLORS.success;
@@ -235,15 +257,42 @@ export default function BillingScreen() {
             <Text style={[styles.actionText, { color: COLORS.success }]}>Record</Text>
           </TouchableOpacity>
           
-          {item.balance_amount > 0 && (
+          <View style={styles.whatsappContainer}>
             <TouchableOpacity
               style={styles.actionButton}
-              onPress={() => handleWhatsAppReminder(item)}
+              onPress={() => setShowWhatsAppOptions(showWhatsAppOptions === item.id ? null : item.id)}
             >
               <Ionicons name="logo-whatsapp" size={18} color="#25D366" />
-              <Text style={[styles.actionText, { color: "#25D366" }]}>Remind</Text>
+              <Text style={[styles.actionText, { color: "#25D366" }]}>WhatsApp</Text>
+              <Ionicons name={showWhatsAppOptions === item.id ? "chevron-up" : "chevron-down"} size={14} color="#25D366" />
             </TouchableOpacity>
-          )}
+            
+            {showWhatsAppOptions === item.id && (
+              <View style={styles.whatsappOptions}>
+                <TouchableOpacity
+                  style={styles.whatsappOption}
+                  onPress={() => handleWhatsAppOption(item, 'confirmation')}
+                >
+                  <Ionicons name="checkmark-circle" size={16} color="#25D366" />
+                  <Text style={styles.whatsappOptionText}>Order Confirm</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.whatsappOption}
+                  onPress={() => handleWhatsAppOption(item, 'delivery')}
+                >
+                  <Ionicons name="car" size={16} color="#25D366" />
+                  <Text style={styles.whatsappOptionText}>Delivery Reminder</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.whatsappOption}
+                  onPress={() => handleWhatsAppOption(item, 'balance')}
+                >
+                  <Ionicons name="cash" size={16} color="#25D366" />
+                  <Text style={styles.whatsappOptionText}>Balance Reminder</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
           
           <TouchableOpacity
             style={styles.actionButton}
@@ -656,6 +705,31 @@ const styles = StyleSheet.create({
   actionText: {
     fontSize: 13,
     fontWeight: '500',
+  },
+  whatsappContainer: {
+    position: 'relative',
+  },
+  whatsappOptions: {
+    position: 'absolute',
+    top: '100%',
+    left: -20,
+    backgroundColor: COLORS.white,
+    borderRadius: BORDER_RADIUS.md,
+    padding: SPACING.xs,
+    ...SHADOWS.medium,
+    zIndex: 1000,
+    minWidth: 160,
+  },
+  whatsappOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.sm,
+  },
+  whatsappOptionText: {
+    fontSize: 13,
+    color: COLORS.black,
   },
   emptyState: {
     alignItems: 'center',
