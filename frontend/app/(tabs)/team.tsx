@@ -21,12 +21,8 @@ import { GoldButton } from '../../src/components/GoldButton';
 import { useAuth } from '../../src/context/AuthContext';
 import { api } from '../../src/services/api';
 
-import Constants from 'expo-constants';
-
-// Use Python backend API (same as other endpoints)
-const API_BASE = Constants.expoConfig?.extra?.EXPO_PUBLIC_BACKEND_URL || 
-                 process.env.EXPO_PUBLIC_BACKEND_URL || 
-                 'https://boutiquefit-staging.preview.emergentagent.com';
+// Use same base URL as api service
+const API_BASE = process.env.EXPO_PUBLIC_BACKEND_URL || 'https://boutiquefit-staging.preview.emergentagent.com';
 
 interface Assignment {
   id: string;
@@ -148,6 +144,7 @@ export default function TeamScreen() {
     }
 
     try {
+      console.log('Adding staff:', newStaffName, newStaffRole, user?.user_id);
       const response = await fetch(`${API_BASE}/api/staff/add`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -158,16 +155,21 @@ export default function TeamScreen() {
         }),
       });
 
-      if (response.ok) {
-        Alert.alert('Success', 'Staff member added!');
+      console.log('Add staff response status:', response.status);
+      const data = await response.json();
+      console.log('Add staff response:', data);
+
+      if (response.ok && data.success) {
         setShowAddStaffModal(false);
         setNewStaffName('');
-        fetchReport();
+        await fetchReport(); // Wait for refresh
+        Alert.alert('Success', 'Staff member added!');
       } else {
-        throw new Error('Failed to add staff');
+        throw new Error(data.detail || 'Failed to add staff');
       }
-    } catch (error) {
-      Alert.alert('Error', 'Failed to add staff member');
+    } catch (error: any) {
+      console.error('Add staff error:', error);
+      Alert.alert('Error', error.message || 'Failed to add staff member');
     }
   };
 
