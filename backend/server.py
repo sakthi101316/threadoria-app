@@ -13,7 +13,7 @@ import base64
 from bson import ObjectId
 import httpx
 import asyncio
-from emergentintegrations.llm.chat import LlmChat, UserMessage
+import anthropic
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -1654,7 +1654,7 @@ async def request_backup(backup: BackupRequest):
 # ========================== CLAUDE AI CHAT ==========================
 
 # Store chat sessions in memory (for simple session management)
-chat_sessions: Dict[str, LlmChat] = {}
+chat_sessions: Dict[str, list] = {}
 
 BOUTIQUE_SYSTEM_MESSAGE = """You are MAAHIS AI, a premium boutique assistant for MAAHIS Designer Boutique. You help with:
 
@@ -1692,35 +1692,50 @@ class ClaudeChatResponse(BaseModel):
 async def claude_chat(request: ClaudeChatRequest):
     """Chat with Claude AI assistant"""
     try:
-        api_key = os.environ.get('EMERGENT_LLM_KEY')
+        api_key = os.environ.get('ANTHROPIC_API_KEY') or os.environ.get('EMERGENT_LLM_KEY')
         if not api_key:
             raise HTTPException(status_code=500, detail="Claude API key not configured")
         
         # Use phone as session ID for conversation continuity
         session_id = f"boutique_{request.phone}"
         
-        # Get or create chat session
+        # Get or create chat history
         if session_id not in chat_sessions:
-            chat = LlmChat(
-                api_key=api_key,
-                session_id=session_id,
-                system_message=BOUTIQUE_SYSTEM_MESSAGE
-            )
-            # Use Claude Sonnet 4.6
-            chat.with_model("anthropic", "claude-sonnet-4-6")
-            chat_sessions[session_id] = chat
-        else:
-            chat = chat_sessions[session_id]
+            chat_sessions[session_id] = []
         
-        # Create user message
-        user_message = UserMessage(text=request.message)
+        # Add user message to history
+        chat_sessions[session_id].append({
+            "role": "user",
+            "content": request.message
+        })
+        
+        # Create Anthropic client
+        client = anthropic.Anthropic(api_key=api_key)
         
         # Get response from Claude
-        response = await chat.send_message(user_message)
+        response = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=1024,
+            system=BOUTIQUE_SYSTEM_MESSAGE,
+            messages=chat_sessions[session_id]
+        )
+        
+        # Extract reply
+        reply = response.content[0].text
+        
+        # Add assistant response to history
+        chat_sessions[session_id].append({
+            "role": "assistant", 
+            "content": reply
+        })
+        
+        # Keep only last 20 messages to prevent memory issues
+        if len(chat_sessions[session_id]) > 20:
+            chat_sessions[session_id] = chat_sessions[session_id][-20:]
         
         logger.info(f"Claude chat - Phone: {request.phone}, Message: {request.message[:50]}...")
         
-        return ClaudeChatResponse(status="success", reply=response)
+        return ClaudeChatResponse(status="success", reply=reply)
         
     except Exception as e:
         logger.error(f"Claude chat error: {str(e)}")
