@@ -21,8 +21,8 @@ import { GoldButton } from '../../src/components/GoldButton';
 import { useAuth } from '../../src/context/AuthContext';
 import { api } from '../../src/services/api';
 
-// Use same base URL as api service - with guaranteed fallback
-const API_BASE = process.env.EXPO_PUBLIC_BACKEND_URL || 'https://maahis-production.up.railway.app';
+// PRODUCTION: Railway backend URL (hardcoded for reliability)
+const API_BASE = 'https://maahis-production.up.railway.app';
 
 interface Assignment {
   id: string;
