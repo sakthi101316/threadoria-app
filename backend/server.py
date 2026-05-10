@@ -206,30 +206,32 @@ class CustomerResponse(BaseModel):
     notes: str
     created_at: datetime
 
-# Measurement Models
+# Measurement Models - Accept both int/float and string values
+from typing import Union
+
 class TopMeasurements(BaseModel):
-    full_length: Optional[float] = 0
-    shoulder: Optional[float] = 0
-    upper_chest: Optional[float] = 0
-    bust: Optional[float] = 0
-    waist: Optional[float] = 0
-    front_deep: Optional[float] = 0
-    back_deep: Optional[float] = 0
-    sleeve_length: Optional[float] = 0
-    sleeve_round: Optional[float] = 0
-    arm_hole: Optional[float] = 0
-    biceps: Optional[float] = 0
-    dot_point: Optional[float] = 0
-    dot_to_dot: Optional[float] = 0
-    slit_length: Optional[float] = 0
-    seat_round: Optional[float] = 0
+    full_length: Optional[Union[float, str]] = 0
+    shoulder: Optional[Union[float, str]] = 0
+    upper_chest: Optional[Union[float, str]] = 0
+    bust: Optional[Union[float, str]] = 0
+    waist: Optional[Union[float, str]] = 0
+    front_deep: Optional[Union[float, str]] = 0
+    back_deep: Optional[Union[float, str]] = 0
+    sleeve_length: Optional[Union[float, str]] = 0
+    sleeve_round: Optional[Union[float, str]] = 0
+    arm_hole: Optional[Union[float, str]] = 0
+    biceps: Optional[Union[float, str]] = 0
+    dot_point: Optional[Union[float, str]] = 0
+    dot_to_dot: Optional[Union[float, str]] = 0
+    slit_length: Optional[Union[float, str]] = 0
+    seat_round: Optional[Union[float, str]] = 0
 
 class BottomMeasurements(BaseModel):
-    length: Optional[float] = 0
-    hip_round: Optional[float] = 0
-    thighs: Optional[float] = 0
-    knees: Optional[float] = 0
-    ankle: Optional[float] = 0
+    length: Optional[Union[float, str]] = 0
+    hip_round: Optional[Union[float, str]] = 0
+    thighs: Optional[Union[float, str]] = 0
+    knees: Optional[Union[float, str]] = 0
+    ankle: Optional[Union[float, str]] = 0
 
 class MeasurementCreate(BaseModel):
     customer_id: str

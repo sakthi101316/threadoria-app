@@ -13,8 +13,9 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "updates": {
-      "url": "https://u.expo.dev/shivom1010/threadoria",
+      "url": "https://u.expo.dev/shivom1010",
       "enabled": true,
+      "checkAutomatically": "ON_LOAD",
       "fallbackToCacheTimeout": 0
     },
     "ios": {
