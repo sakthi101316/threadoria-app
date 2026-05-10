@@ -179,23 +179,35 @@ export default function AddCustomerScreen() {
       
       if (hasTopMeasurements || hasBottomMeasurements) {
         console.log('Saving measurements...');
+        // Filter out empty values and convert to numbers
+        const cleanTopMeasurements = Object.fromEntries(
+          Object.entries(topMeasurements)
+            .filter(([_, v]) => v !== '' && v !== null)
+            .map(([k, v]) => [k, parseFloat(v as string) || 0])
+        );
+        const cleanBottomMeasurements = Object.fromEntries(
+          Object.entries(bottomMeasurements)
+            .filter(([_, v]) => v !== '' && v !== null)
+            .map(([k, v]) => [k, parseFloat(v as string) || 0])
+        );
+        
         // Save top measurements if any
-        if (hasTopMeasurements) {
+        if (hasTopMeasurements && Object.keys(cleanTopMeasurements).length > 0) {
           await api.createMeasurement({
             customer_id: customer.id,
             category: 'Top',
-            top_measurements: topMeasurements,
+            top_measurements: cleanTopMeasurements,
             bottom_measurements: null,
             reference_photos: [],
           });
         }
         // Save bottom measurements if any
-        if (hasBottomMeasurements) {
+        if (hasBottomMeasurements && Object.keys(cleanBottomMeasurements).length > 0) {
           await api.createMeasurement({
             customer_id: customer.id,
             category: 'Bottom',
             top_measurements: null,
-            bottom_measurements: bottomMeasurements,
+            bottom_measurements: cleanBottomMeasurements,
             reference_photos: [],
           });
         }
@@ -208,13 +220,24 @@ export default function AddCustomerScreen() {
     } catch (error: any) {
       console.error('Error creating customer:', error);
       let errorMessage = 'Failed to add customer';
+      
+      // Handle different error types
       if (typeof error === 'string') {
         errorMessage = error;
-      } else if (error?.message) {
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (error?.message && typeof error.message === 'string') {
         errorMessage = error.message;
       } else if (error?.detail) {
         errorMessage = typeof error.detail === 'string' ? error.detail : JSON.stringify(error.detail);
+      } else if (typeof error === 'object') {
+        try {
+          errorMessage = JSON.stringify(error);
+        } catch {
+          errorMessage = 'An unknown error occurred';
+        }
       }
+      
       Alert.alert('Error', errorMessage);
     } finally {
       setLoading(false);
