@@ -1,4 +1,4 @@
-const API_BASE = process.env.EXPO_PUBLIC_BACKEND_URL || '';
+const API_BASE = process.env.EXPO_PUBLIC_BACKEND_URL || 'https://maahis-production.up.railway.app';
 
 class ApiService {
   private baseUrl: string;
