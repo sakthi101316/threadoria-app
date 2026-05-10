@@ -178,40 +178,45 @@ export default function AddCustomerScreen() {
       const hasBottomMeasurements = Object.values(bottomMeasurements).some(v => v !== '');
       
       if (hasTopMeasurements || hasBottomMeasurements) {
-        console.log('Saving measurements...');
-        // Filter out empty values and convert to numbers
-        const cleanTopMeasurements = Object.fromEntries(
-          Object.entries(topMeasurements)
-            .filter(([_, v]) => v !== '' && v !== null)
-            .map(([k, v]) => [k, parseFloat(v as string) || 0])
-        );
-        const cleanBottomMeasurements = Object.fromEntries(
-          Object.entries(bottomMeasurements)
-            .filter(([_, v]) => v !== '' && v !== null)
-            .map(([k, v]) => [k, parseFloat(v as string) || 0])
-        );
-        
-        // Save top measurements if any
-        if (hasTopMeasurements && Object.keys(cleanTopMeasurements).length > 0) {
-          await api.createMeasurement({
-            customer_id: customer.id,
-            category: 'Top',
-            top_measurements: cleanTopMeasurements,
-            bottom_measurements: null,
-            reference_photos: [],
-          });
+        try {
+          console.log('Saving measurements...');
+          // Filter out empty values and convert to numbers
+          const cleanTopMeasurements = Object.fromEntries(
+            Object.entries(topMeasurements)
+              .filter(([_, v]) => v !== '' && v !== null)
+              .map(([k, v]) => [k, parseFloat(v as string) || 0])
+          );
+          const cleanBottomMeasurements = Object.fromEntries(
+            Object.entries(bottomMeasurements)
+              .filter(([_, v]) => v !== '' && v !== null)
+              .map(([k, v]) => [k, parseFloat(v as string) || 0])
+          );
+          
+          // Save top measurements if any
+          if (hasTopMeasurements && Object.keys(cleanTopMeasurements).length > 0) {
+            await api.createMeasurement({
+              customer_id: customer.id,
+              category: 'Top',
+              top_measurements: cleanTopMeasurements,
+              bottom_measurements: null,
+              reference_photos: [],
+            });
+          }
+          // Save bottom measurements if any
+          if (hasBottomMeasurements && Object.keys(cleanBottomMeasurements).length > 0) {
+            await api.createMeasurement({
+              customer_id: customer.id,
+              category: 'Bottom',
+              top_measurements: null,
+              bottom_measurements: cleanBottomMeasurements,
+              reference_photos: [],
+            });
+          }
+          console.log('Measurements saved!');
+        } catch (measurementError) {
+          console.log('Measurement save error (customer still created):', measurementError);
+          // Don't throw - customer was created successfully
         }
-        // Save bottom measurements if any
-        if (hasBottomMeasurements && Object.keys(cleanBottomMeasurements).length > 0) {
-          await api.createMeasurement({
-            customer_id: customer.id,
-            category: 'Bottom',
-            top_measurements: null,
-            bottom_measurements: cleanBottomMeasurements,
-            reference_photos: [],
-          });
-        }
-        console.log('Measurements saved!');
       }
       
       Alert.alert('Success', 'Customer added successfully!', [
