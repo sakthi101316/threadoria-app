@@ -121,7 +121,7 @@ export default function TeamScreen() {
   const fetchOrders = async () => {
     setOrdersLoading(true);
     try {
-      const ordersData = await api.getOrders(user?.user_id);
+      const ordersData = await api.getOrders({ user_id: user?.user_id });
       const formattedOrders = ordersData.map((o: any) => ({
         id: o.id,
         order_number: o.order_number || o.id.slice(-6).toUpperCase(),

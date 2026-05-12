@@ -2,21 +2,19 @@
   "expo": {
     "name": "Threadoria",
     "slug": "threadoria",
-    "owner": "shivom1010",
+    "owner": "test101010",
     "version": "2.0.0",
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
+    "runtimeVersion": "2.0.0",
     "orientation": "portrait",
     "icon": "./assets/threadoria-logo.png",
     "scheme": "threadoria",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "updates": {
-      "url": "https://u.expo.dev/783e3ae2-3872-4b3c-b90f-267ac6037fa4",
       "enabled": true,
       "checkAutomatically": "ON_LOAD",
-      "fallbackToCacheTimeout": 0
+      "fallbackToCacheTimeout": 0,
+      "url": "https://u.expo.dev/b66cfee4-2a69-4e2e-81d8-b9e975cb33fc"
     },
     "ios": {
       "supportsTablet": true,
@@ -33,15 +31,7 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/threadoria-logo.png",
-      "name": "Threadoria - Stitched with Love",
-      "shortName": "Threadoria",
-      "description": "Stitched with Love, Created by Sisters - Premium boutique management app",
-      "backgroundColor": "#FDF6E9",
-      "themeColor": "#8B4513",
-      "startUrl": "/",
-      "display": "standalone",
-      "orientation": "portrait"
+      "favicon": "./assets/threadoria-logo.png"
     },
     "plugins": [
       "expo-router",
@@ -64,7 +54,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "783e3ae2-3872-4b3c-b90f-267ac6037fa4"
+        "projectId": "b66cfee4-2a69-4e2e-81d8-b9e975cb33fc"
       }
     }
   }
