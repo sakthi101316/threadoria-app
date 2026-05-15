@@ -24,7 +24,7 @@ client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ.get('DB_NAME', 'boutiquefit')]
 
 # MAAHIS Live Dashboard Agent Configuration
-AGENT_BASE_URL = os.environ.get('AGENT_URL', 'https://maahis-middleware.onrender.com')
+AGENT_BASE_URL = os.environ.get('AGENT_URL', 'https://maahis-middleware-production.up.railway.app')
 WEBHOOK_VERIFY_TOKEN = 'maahis_webhook_2024'
 
 # Create the main app without a prefix
@@ -77,7 +77,7 @@ async def notify_antigravity_order_created(order_number: str, customer_phone: st
         
         async with httpx.AsyncClient(timeout=30.0) as http_client:
             response = await http_client.post(
-                f"{AGENT_BASE_URL}/webhook",
+                f"{AGENT_BASE_URL}/webhook/orders",
                 json=payload,
                 headers={
                     "Content-Type": "application/json",
@@ -123,7 +123,7 @@ async def notify_antigravity_status_update(order_number: str, phone: str, new_st
         
         async with httpx.AsyncClient(timeout=30.0) as http_client:
             response = await http_client.post(
-                f"{AGENT_BASE_URL}/webhook",
+                f"{AGENT_BASE_URL}/webhook/orders",
                 json=payload,
                 headers={
                     "Content-Type": "application/json",
