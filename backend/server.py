@@ -1022,9 +1022,19 @@ async def delete_order(order_id: str, user_id: Optional[str] = None):
         if not order:
             raise HTTPException(status_code=404, detail="Order not found or access denied")
         
+        # Get order details for webhook before deleting
+        order_number = order.get('order_number') or f"ORD-{order_id[-6:].upper()}"
+        customer_name = order.get('customer_name', '')
+        
         # Delete associated payment
         await db.payments.delete_one({"order_id": order_id})
         await db.orders.delete_one(query)
+        
+        # Send delete webhook (NON-BLOCKING)
+        asyncio.create_task(notify_order_delete_webhook(
+            order_number=order_number,
+            customer_name=customer_name
+        ))
         
         return {"message": "Order deleted successfully"}
     except Exception as e:
