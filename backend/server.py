@@ -862,19 +862,7 @@ async def create_order(order: OrderCreate):
     
     # Notify Agent about new order (NON-BLOCKING - fire and forget)
     print(f"🔴🔴🔴 WEBHOOK FIRING NOW for {order_number} to {AGENT_BASE_URL}/api/new-order 🔴🔴🔴")
-    logger.info(f"=== FIRING WEBHOOK === Order: {order_number}, Phone: {customer_phone}, Amount: {order.amount or 0}, Advance: {order.advance_paid or 0}")
-    asyncio.create_task(notify_antigravity_order_created(
-        order_number=order_number,
-        customer_phone=customer_phone,
-        customer_name=customer_name,
-        order_type=order.order_type,
-        notes=order.description or order.voice_instructions or "",
-        amount=order.amount or 0,
-        delivery_date=delivery_date_str,
-        advance_paid=order.advance_paid or 0  # Pass advance paid to webhook
-    ))
-    print(f"🟢🟢🟢 WEBHOOK TASK CREATED for {order_number} 🟢🟢🟢")
-    logger.info(f"=== WEBHOOK TASK CREATED === Order: {order_number}")
+   
     
     return OrderResponse(**order_doc)
 
