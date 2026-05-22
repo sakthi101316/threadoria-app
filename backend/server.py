@@ -820,7 +820,7 @@ async def get_orders(
     search: Optional[str] = None,
     user_id: Optional[str] = None
 ):
-    """Get all orders with optional filters"""
+    """Get all orders with optional filters - excludes photos for speed"""
     query = {}
     if user_id:
         query["user_id"] = user_id
@@ -835,8 +835,16 @@ async def get_orders(
             {"order_type": {"$regex": search, "$options": "i"}}
         ]
     
-    orders = await db.orders.find(query).sort("created_at", -1).to_list(1000)
-    return [OrderResponse(**serialize_doc(o)) for o in orders]
+    # Exclude material_photos for faster loading
+    projection = {"material_photos": 0}
+    orders = await db.orders.find(query, projection).sort("created_at", -1).to_list(1000)
+    
+    result = []
+    for o in orders:
+        order_data = serialize_doc(o)
+        order_data['material_photos'] = []
+        result.append(OrderResponse(**order_data))
+    return result
 
 @api_router.get("/orders/{order_id}", response_model=OrderResponse)
 async def get_order(order_id: str, user_id: Optional[str] = None):
