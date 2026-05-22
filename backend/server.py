@@ -998,59 +998,6 @@ async def delete_order(order_id: str, user_id: Optional[str] = None):
 
 # ========================== PAYMENT ROUTES ==========================
 
-@api_router.post("/payments", response_model=PaymentResponse)
-async def create_payment(payment: PaymentCreate):
-    """Create or update payment for an order"""
-    balance = payment.final_amount - payment.advance_paid
-    status = "paid" if balance <= 0 else ("partial" if payment.advance_paid > 0 else "unpaid")
-    
-    # Check if payment already exists for this order
-    existing = await db.payments.find_one({"order_id": payment.order_id})
-    
-    payment_doc = {
-        "order_id": payment.order_id,
-        "final_amount": payment.final_amount,
-        "advance_paid": payment.advance_paid,
-        "balance_amount": max(0, balance),
-        "payment_status": status,
-        "last_updated": datetime.utcnow()
-    }
-    
-    if existing:
-        await db.payments.update_one(
-            {"order_id": payment.order_id},
-            {"$set": payment_doc}
-        )
-        payment_doc['id'] = str(existing['_id'])
-    else:
-        result = await db.payments.insert_one(payment_doc)
-        payment_doc['id'] = str(result.inserted_id)
-    
-    # Get order details for webhook with actual amount
-    try:
-        order = await db.orders.find_one({"_id": ObjectId(payment.order_id)})
-        if order:
-            order_number = f"ORD-{payment.order_id[-6:].upper()}"
-            delivery_date_str = ""
-            if order.get('delivery_date'):
-                try:
-                    delivery_date_str = order['delivery_date'].strftime('%d %b %Y')
-                except:
-                    delivery_date_str = str(order.get('delivery_date', ''))
-            
-            # Send webhook with REAL AMOUNT when payment is created/updated
-            asyncio.create_task(notify_antigravity_order_created(
-                order_number=order_number,
-                customer_phone=order.get('customer_phone', ''),
-                customer_name=order.get('customer_name', ''),
-                order_type=order.get('order_type', ''),
-                notes=order.get('description', ''),
-                amount=payment.final_amount,  # REAL AMOUNT from payment
-                delivery_date=delivery_date_str
-            ))
-    except Exception as e:
-        logger.error(f"Error sending payment webhook: {e}")
-    
     return PaymentResponse(**payment_doc)
 
 @api_router.get("/payments/order/{order_id}", response_model=Optional[PaymentResponse])
