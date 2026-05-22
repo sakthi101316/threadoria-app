@@ -949,12 +949,25 @@ async def update_order_status(order_id: str, status: str):
         )
         
         # Generate order number and notify Dashboard (NON-BLOCKING)
-        order_number = f"ORD-{order_id[-6:].upper()}"
+        order_number = order.get('order_number') or f"ORD-{order_id[-6:].upper()}"
         asyncio.create_task(notify_antigravity_status_update(
             order_number=order_number,
             phone=order.get('customer_phone', ''),
             new_status=status,
             customer_name=order.get('customer_name', '')
+        ))
+        
+        # Get payment info for the update webhook
+        payment = await db.payments.find_one({"order_id": order_id})
+        amount = payment.get('final_amount', 0) if payment else order.get('amount', 0)
+        advance_paid = payment.get('advance_paid', 0) if payment else order.get('advance_paid', 0)
+        
+        # Send order update webhook (NON-BLOCKING)
+        asyncio.create_task(notify_order_update_webhook(
+            order_number=order_number,
+            amount=amount,
+            advance_paid=advance_paid,
+            status=status
         ))
         
         return {"message": "Status updated successfully", "status": status}
