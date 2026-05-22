@@ -136,7 +136,8 @@ async def notify_antigravity_status_update(order_number: str, phone: str, new_st
     except Exception as e:
         logger.error(f"Failed to notify Dashboard (status update): {e}")
         return None
-        async def notify_order_update_webhook(order_number: str, amount: float, advance_paid: float, status: str):
+        
+async def notify_order_update_webhook(order_number: str, amount: float, advance_paid: float, status: str):
     """Send order/payment update to MAAHIS middleware webhook - NON-BLOCKING"""
     try:
         payload = {
