@@ -169,6 +169,39 @@ async def notify_order_update_webhook(order_number: str, amount: float, advance_
         logger.error(f"Failed to send order update webhook: {e}")
         return None
 
+async def notify_order_update_webhook(order_number: str, amount: float, advance_paid: float, status: str):
+    """Send order/payment update to MAAHIS middleware webhook - NON-BLOCKING"""
+    try:
+        payload = {
+            "order_number": order_number,
+            "amount": int(amount) if amount else 0,
+            "advance_paid": int(advance_paid) if advance_paid else 0,
+            "status": status
+        }
+        
+        webhook_url = f"{AGENT_BASE_URL}/webhook/order-update"
+        print(f"🔴 ORDER UPDATE WEBHOOK to {webhook_url} with payload: {payload}")
+        logger.info(f"Sending order update webhook: {payload}")
+        
+        async with httpx.AsyncClient(timeout=30.0) as http_client:
+            response = await http_client.post(
+                webhook_url,
+                json=payload,
+                headers={
+                    "Content-Type": "application/json",
+                    "X-Verify-Token": WEBHOOK_VERIFY_TOKEN,
+                    "User-Agent": "MAAHIS-Webhook/1.0"
+                }
+            )
+            print(f"🟢 ORDER UPDATE WEBHOOK RESPONSE: {response.status_code}")
+            logger.info(f"Order update webhook response: {response.status_code} - {response.text[:200]}")
+            return response.text if response.status_code == 200 else None
+    except Exception as e:
+        print(f"🔴 ORDER UPDATE WEBHOOK ERROR: {e}")
+        logger.error(f"Failed to send order update webhook: {e}")
+        return None
+
+
 async def notify_antigravity_payment(order_id: str, amount: float, method: str = "Cash"):
     """Notify Antigravity when a payment is received - NON-BLOCKING"""
     try:
