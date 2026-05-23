@@ -1045,6 +1045,33 @@ async def delete_order(order_id: str, user_id: Optional[str] = None):
 
 # ========================== PAYMENT ROUTES ==========================
 
+    @api_router.post("/payments", response_model=PaymentResponse)
+async def create_payment(payment: PaymentCreate):
+    """Create a payment record for an order"""
+    balance = payment.final_amount - payment.advance_paid
+    status = "paid" if balance <= 0 else ("partial" if payment.advance_paid > 0 else "unpaid")
+    
+    payment_doc = {
+        "order_id": payment.order_id,
+        "final_amount": payment.final_amount,
+        "advance_paid": payment.advance_paid,
+        "balance_amount": max(0, balance),
+        "payment_status": status,
+        "last_updated": datetime.utcnow()
+    }
+    
+    # Check if payment already exists for this order
+    existing = await db.payments.find_one({"order_id": payment.order_id})
+    if existing:
+        await db.payments.update_one(
+            {"order_id": payment.order_id},
+            {"$set": payment_doc}
+        )
+        payment_doc['id'] = str(existing['_id'])
+    else:
+        result = await db.payments.insert_one(payment_doc)
+        payment_doc['id'] = str(result.inserted_id)
+    
     return PaymentResponse(**payment_doc)
 
 @api_router.get("/payments/order/{order_id}", response_model=Optional[PaymentResponse])
