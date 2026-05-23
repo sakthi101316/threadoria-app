@@ -1045,7 +1045,7 @@ async def delete_order(order_id: str, user_id: Optional[str] = None):
 
 # ========================== PAYMENT ROUTES ==========================
 
-    @api_router.post("/payments", response_model=PaymentResponse)
+@api_router.post("/payments", response_model=PaymentResponse)
 async def create_payment(payment: PaymentCreate):
     """Create a payment record for an order"""
     balance = payment.final_amount - payment.advance_paid
