@@ -1668,6 +1668,72 @@ Thank you for choosing *{boutique_name}*! ✨
         return {"url": whatsapp_url, "message": message}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+@api_router.get("/whatsapp/work-order/{order_id}")
+async def get_whatsapp_work_order(order_id: str):
+    """Get WhatsApp message URL for sharing work order with measurements"""
+    try:
+        order = await db.orders.find_one({"_id": ObjectId(order_id)})
+        if not order:
+            raise HTTPException(status_code=404, detail="Order not found")
+        
+        customer = await db.customers.find_one({"_id": ObjectId(order['customer_id'])})
+        customer_name = customer.get('name', 'Customer') if customer else 'Customer'
+        
+        # Get measurements
+        measurements = await db.measurements.find({"customer_id": order['customer_id']}).sort("measurement_date", -1).to_list(1)
+        
+        measurement_text = ''
+        if measurements and len(measurements) > 0:
+            m = measurements[0]
+            
+            if m.get('top_measurements'):
+                measurement_text += '\n\n📐 *TOP MEASUREMENTS:*\n'
+                top = m['top_measurements']
+                if top.get('full_length'): measurement_text += f"• Full Length: {top['full_length']}\"\n"
+                if top.get('shoulder'): measurement_text += f"• Shoulder: {top['shoulder']}\"\n"
+                if top.get('upper_chest'): measurement_text += f"• Upper Chest: {top['upper_chest']}\"\n"
+                if top.get('bust'): measurement_text += f"• Bust: {top['bust']}\"\n"
+                if top.get('waist'): measurement_text += f"• Waist: {top['waist']}\"\n"
+                if top.get('front_deep'): measurement_text += f"• Front Deep: {top['front_deep']}\"\n"
+                if top.get('back_deep'): measurement_text += f"• Back Deep: {top['back_deep']}\"\n"
+                if top.get('sleeve_length'): measurement_text += f"• Sleeve Length: {top['sleeve_length']}\"\n"
+                if top.get('sleeve_round'): measurement_text += f"• Sleeve Round: {top['sleeve_round']}\"\n"
+                if top.get('arm_hole'): measurement_text += f"• Arm Hole: {top['arm_hole']}\"\n"
+                if top.get('biceps'): measurement_text += f"• Biceps: {top['biceps']}\"\n"
+                if top.get('seat_round'): measurement_text += f"• Seat Round: {top['seat_round']}\"\n"
+            
+            if m.get('bottom_measurements'):
+                measurement_text += '\n📐 *BOTTOM MEASUREMENTS:*\n'
+                bottom = m['bottom_measurements']
+                if bottom.get('length'): measurement_text += f"• Length: {bottom['length']}\"\n"
+                if bottom.get('hip_round'): measurement_text += f"• Hip Round: {bottom['hip_round']}\"\n"
+                if bottom.get('thighs'): measurement_text += f"• Thighs: {bottom['thighs']}\"\n"
+                if bottom.get('knees'): measurement_text += f"• Knees: {bottom['knees']}\"\n"
+                if bottom.get('ankle'): measurement_text += f"• Ankle: {bottom['ankle']}\"\n"
+        
+        message = f"""🧵 *MAAHIS - WORK ORDER*
+━━━━━━━━━━━━━━━━━━━━
+
+👤 *CUSTOMER:* {customer_name}
+
+📋 *ORDER DETAILS:*
+• Order Type: {order.get('order_type', 'N/A')}
+• Order Date: {order.get('order_date', datetime.utcnow()).strftime('%d %b %Y')}
+• Delivery Date: {order.get('delivery_date', datetime.utcnow()).strftime('%d %b %Y')}
+• Status: {order.get('status', 'N/A')}
+{f"📝 *DESCRIPTION:* {order.get('description')}" if order.get('description') else ''}{measurement_text}
+
+━━━━━━━━━━━━━━━━━━━━
+_Shared from MAAHIS App_
+"""
+        
+        import urllib.parse
+        encoded_message = urllib.parse.quote(message)
+        whatsapp_url = f"whatsapp://send?text={encoded_message}"
+        
+        return {"url": whatsapp_url, "message": message}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 # ========================== HEALTH CHECK ==========================
 
