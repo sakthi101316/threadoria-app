@@ -1742,6 +1742,48 @@ async def health_check():
     """Health check endpoint"""
     return {"status": "healthy", "service": "BoutiqueFit API"}
 
+@api_router.post("/sync-orders-to-dashboard")
+async def sync_orders_to_dashboard():
+    """One-time sync: Push all existing orders to MAAHIS dashboard"""
+    try:
+        orders = await db.orders.find({"synced_to_dashboard": {"$ne": True}}).to_list(1000)
+        
+        synced_count = 0
+        for order in orders:
+            try:
+                order_id = str(order['_id'])
+                order_number = order.get('order_number') or f"ORD-{order_id[-6:].upper()}"
+                
+                payment = await db.payments.find_one({"order_id": order_id})
+                amount = payment.get('final_amount', 0) if payment else order.get('amount', 0)
+                advance_paid = payment.get('advance_paid', 0) if payment else order.get('advance_paid', 0)
+                
+                delivery_date_str = order.get('delivery_date', datetime.utcnow()).strftime('%d %b %Y') if order.get('delivery_date') else ''
+                
+                await notify_antigravity_order_created(
+                    order_number=order_number,
+                    customer_phone=order.get('customer_phone', ''),
+                    customer_name=order.get('customer_name', ''),
+                    order_type=order.get('order_type', ''),
+                    notes=order.get('description', '') or order.get('voice_instructions', ''),
+                    amount=amount,
+                    delivery_date=delivery_date_str,
+                    advance_paid=advance_paid
+                )
+                
+                await db.orders.update_one(
+                    {"_id": order['_id']},
+                    {"$set": {"synced_to_dashboard": True, "order_number": order_number}}
+                )
+                synced_count += 1
+                
+            except Exception as e:
+                logger.error(f"Failed to sync order {order.get('_id')}: {e}")
+        
+        return {"success": True, "message": f"Synced {synced_count} orders to dashboard"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 # Backup endpoint
 class BackupRequest(BaseModel):
     email: str
