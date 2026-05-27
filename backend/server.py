@@ -905,7 +905,7 @@ async def get_orders(
     
     # Exclude material_photos for faster loading
     projection = {"material_photos": 0}
-    orders = await db.orders.find(query, projection).sort("created_at", -1).to_list(1000)
+   orders = await db.orders.find(query, {"material_photos": 0}).to_list(1000)
     
     result = []
     for o in orders:
@@ -914,21 +914,22 @@ async def get_orders(
         result.append(OrderResponse(**order_data))
     return result
 
-@api_router.get("/orders/{order_id}", response_model=OrderResponse)
-async def get_order(order_id: str, user_id: Optional[str] = None):
-    """Get a single order - optionally verify ownership with user_id"""
+@api_router.get("/orders")
+async def get_orders(user_id: str = Query(...)):
+    """Get all orders for a user - OPTIMIZED: excludes material_photos"""
     try:
-        query = {"_id": ObjectId(order_id)}
-        if user_id:
-            query["user_id"] = user_id
-        order = await db.orders.find_one(query)
-        if not order:
-            raise HTTPException(status_code=404, detail="Order not found")
-        return OrderResponse(**serialize_doc(order))
-    except HTTPException:
-        raise  # Re-raise HTTP exceptions as-is
+        query = {"user_id": user_id}
+        # Exclude material_photos (large base64 strings) to speed up loading
+        projection = {"material_photos": 0}
+        orders = await db.orders.find(query, projection).to_list(1000)
+        
+        for order in orders:
+            order['_id'] = str(order['_id'])
+        
+        return orders
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        logger.error(f"Error fetching orders: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.put("/orders/{order_id}", response_model=OrderResponse)
 async def update_order(order_id: str, update: OrderUpdate, user_id: Optional[str] = None):
