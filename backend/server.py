@@ -2099,6 +2099,85 @@ async def root_health_check():
     """Root health check for deployment systems"""
     return {"status": "healthy", "service": "MAAHIS API"}
 
+@api_router.get("/whatsapp/work-order/{order_id}")
+async def get_whatsapp_work_order(order_id: str):
+    """Get WhatsApp message URL for sharing work order to masters (includes measurements)"""
+    try:
+        order = await db.orders.find_one({"_id": ObjectId(order_id)})
+        if not order:
+            raise HTTPException(status_code=404, detail="Order not found")
+        
+        customer = await db.customers.find_one({"_id": ObjectId(order['customer_id'])})
+        
+        boutique_name = "Your Boutique"
+        if order.get('user_id'):
+            user = await db.users.find_one({"_id": ObjectId(order['user_id'])})
+            if user:
+                boutique_name = user.get('boutique_name', 'Your Boutique')
+        
+        customer_name = customer.get('name', 'Customer') if customer else 'Customer'
+        order_number = order.get('order_number', f"ORD-{order_id[-6:].upper()}")
+        delivery_date = order.get('delivery_date')
+        delivery_str = delivery_date.strftime('%d %b %Y') if delivery_date else 'TBD'
+        
+        customer_id = order.get('customer_id')
+        measurements = None
+        if customer_id:
+            measurements = await db.measurements.find_one({"customer_id": customer_id})
+            if not measurements:
+                try:
+                    measurements = await db.measurements.find_one({"customer_id": ObjectId(customer_id)})
+                except:
+                    pass
+        
+        measurements_text = ""
+        if measurements:
+            top = measurements.get('top_measurements', {})
+            bottom = measurements.get('bottom_measurements', {})
+            
+            if top:
+                measurements_text += "\n*TOP MEASUREMENTS:*\n"
+                labels = {'full_length': 'Full Length', 'shoulder': 'Shoulder', 'bust': 'Bust', 'waist': 'Waist', 'front_deep': 'Front Deep', 'back_deep': 'Back Deep', 'sleeve_length': 'Sleeve Length', 'sleeve_round': 'Sleeve Around', 'arm_hole': 'Arm Hole', 'biceps': 'Biceps'}
+                for key, label in labels.items():
+                    val = top.get(key, 0)
+                    if val and float(val) > 0:
+                        measurements_text += f"• {label}: {val}\"\n"
+            
+            if bottom:
+                measurements_text += "\n*BOTTOM MEASUREMENTS:*\n"
+                labels = {'length': 'Length', 'hip_round': 'Hip Round', 'thighs': 'Thighs', 'knees': 'Knees', 'ankle': 'Ankle'}
+                for key, label in labels.items():
+                    val = bottom.get(key, 0)
+                    if val and float(val) > 0:
+                        measurements_text += f"• {label}: {val}\"\n"
+        
+        if not measurements_text:
+            measurements_text = "\n_No measurements recorded_\n"
+        
+        message = f"""✂️ *WORK ORDER - {boutique_name}* ✂️
+━━━━━━━━━━━━━━━━━━━
+*Order #:* {order_number}
+*Customer:* {customer_name}
+*Type:* {order.get('order_type', 'N/A')}
+*Delivery:* {delivery_str}
+━━━━━━━━━━━━━━━━━━━
+{measurements_text}
+━━━━━━━━━━━━━━━━━━━
+*Notes:* {order.get('description', '') or order.get('voice_instructions', '') or 'None'}
+
+_From {boutique_name}_
+"""
+        
+        import urllib.parse
+        encoded_message = urllib.parse.quote(message)
+        whatsapp_url = f"https://wa.me/?text={encoded_message}"
+        
+        return {"url": whatsapp_url, "message": message}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
