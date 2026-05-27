@@ -915,6 +915,22 @@ async def get_orders(
         result.append(OrderResponse(**order_data))
     return result
 
+@api_router.get("/orders/{order_id}", response_model=OrderResponse)
+async def get_order(order_id: str, user_id: Optional[str] = None):
+    """Get a single order - optionally verify ownership with user_id"""
+    try:
+        query = {"_id": ObjectId(order_id)}
+        if user_id:
+            query["user_id"] = user_id
+        order = await db.orders.find_one(query)
+        if not order:
+            raise HTTPException(status_code=404, detail="Order not found")
+        return OrderResponse(**serialize_doc(order))
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
 @api_router.get("/orders")
 async def get_orders(user_id: str = Query(...)):
     """Get all orders for a user - OPTIMIZED: excludes material_photos"""
