@@ -888,7 +888,7 @@ async def get_orders(
     search: Optional[str] = None,
     user_id: Optional[str] = None
 ):
-    """Get all orders with optional filters - excludes photos for speed"""
+    """Get all orders with optional filters - excludes material_photos for performance"""
     query = {}
     if user_id:
         query["user_id"] = user_id
@@ -903,10 +903,11 @@ async def get_orders(
             {"order_type": {"$regex": search, "$options": "i"}}
         ]
     
-    # Exclude material_photos for faster loading
+    # Exclude material_photos from list query for better performance
     projection = {"material_photos": 0}
-   orders = await db.orders.find(query, {"material_photos": 0}).to_list(1000)
+    orders = await db.orders.find(query, projection).sort("created_at", -1).to_list(1000)
     
+    # Add empty material_photos array for response compatibility
     result = []
     for o in orders:
         order_data = serialize_doc(o)
