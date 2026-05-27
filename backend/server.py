@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, UploadFile, File, Form, BackgroundTasks, Query
+from fastapi import FastAPI, APIRouter, HTTPException, UploadFile, File, Form, BackgroundTasks
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -888,7 +888,7 @@ async def get_orders(
     search: Optional[str] = None,
     user_id: Optional[str] = None
 ):
-    """Get all orders with optional filters - excludes material_photos for performance"""
+    """Get all orders with optional filters - excludes photos for speed"""
     query = {}
     if user_id:
         query["user_id"] = user_id
@@ -903,11 +903,10 @@ async def get_orders(
             {"order_type": {"$regex": search, "$options": "i"}}
         ]
     
-    # Exclude material_photos from list query for better performance
+    # Exclude material_photos for faster loading
     projection = {"material_photos": 0}
     orders = await db.orders.find(query, projection).sort("created_at", -1).to_list(1000)
     
-    # Add empty material_photos array for response compatibility
     result = []
     for o in orders:
         order_data = serialize_doc(o)
@@ -927,26 +926,9 @@ async def get_order(order_id: str, user_id: Optional[str] = None):
             raise HTTPException(status_code=404, detail="Order not found")
         return OrderResponse(**serialize_doc(order))
     except HTTPException:
-        raise
+        raise  # Re-raise HTTP exceptions as-is
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
-
-@api_router.get("/orders")
-async def get_orders(user_id: str = Query(...)):
-    """Get all orders for a user - OPTIMIZED: excludes material_photos"""
-    try:
-        query = {"user_id": user_id}
-        # Exclude material_photos (large base64 strings) to speed up loading
-        projection = {"material_photos": 0}
-        orders = await db.orders.find(query, projection).to_list(1000)
-        
-        for order in orders:
-            order['_id'] = str(order['_id'])
-        
-        return orders
-    except Exception as e:
-        logger.error(f"Error fetching orders: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.put("/orders/{order_id}", response_model=OrderResponse)
 async def update_order(order_id: str, update: OrderUpdate, user_id: Optional[str] = None):
