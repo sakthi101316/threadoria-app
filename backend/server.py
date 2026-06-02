@@ -1271,7 +1271,7 @@ async def resync_order_to_dashboard(order_id: str):
         amount=amount,
         advance_paid=advance_paid,
         delivery_date=delivery_str,
-        notes=order.get('description', '') or order.get('voice_instructions', '')
+       notes = ""
     )
     status = order.get('status', 'received')
     return {
