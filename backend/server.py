@@ -1273,7 +1273,7 @@ async def resync_order_to_dashboard(order_id: str):
         delivery_date=delivery_str,
         notes=order.get('description', '') or order.get('voice_instructions', '')
     )
-    
+    status = order.get('status', 'received')
     return {
         "order_id": order_id,
         "order_number": order_number,
