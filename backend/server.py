@@ -1331,7 +1331,7 @@ async def resync_all_orders(user_id: str):
             amount=amount,
             advance_paid=advance,
             delivery_date=delivery_str,
-            notes=order.get('description', '') or order.get('voice_instructions', '')
+           notes = ""
         )
         
         results.append({
