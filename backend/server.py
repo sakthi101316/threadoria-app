@@ -1258,17 +1258,21 @@ async def resync_order_to_dashboard(order_id: str):
     customer_name = order.get('customer_name', 'Unknown')
     amount = payment.get('final_amount', 0) if payment else order.get('amount', 0)
     advance_paid = payment.get('advance_paid', 0) if payment else order.get('advance_paid', 0)
-    status = order.get('status', 'received')
-    
-    result = await notify_dashboard_order_updated(
-    order_number=order_number,
-    amount=amount,
-    advance_paid=advance_paid,
-    status=status,
-    customer_name=customer_name,
-    customer_phone=order.get('customer_phone', ''),
-    order_type=order.get('order_type', '')
-)
+    customer_phone = order.get('customer_phone', '')
+    order_type = order.get('order_type', '')
+    delivery_date = order.get('delivery_date')
+    delivery_str = delivery_date.strftime('%d %b %Y') if delivery_date else ''
+
+    result = await notify_dashboard_order_created(
+        order_number=order_number,
+        customer_name=customer_name,
+        customer_phone=customer_phone,
+        order_type=order_type,
+        amount=amount,
+        advance_paid=advance_paid,
+        delivery_date=delivery_str,
+        notes=order.get('description', '') or order.get('voice_instructions', '')
+    )
     
     return {
         "order_id": order_id,
@@ -1313,13 +1317,21 @@ async def resync_all_orders(user_id: str):
         order_number = order.get('order_number') or f"ORD-{order_id[-6:].upper()}"
         amount = payment.get('final_amount', 0) if payment else order.get('amount', 0)
         advance = payment.get('advance_paid', 0) if payment else order.get('advance_paid', 0)
-        
-        result = await notify_dashboard_order_updated(
+        customer_name = order.get('customer_name', '')
+        customer_phone = order.get('customer_phone', '')
+        order_type = order.get('order_type', '')
+        delivery_date = order.get('delivery_date')
+        delivery_str = delivery_date.strftime('%d %b %Y') if delivery_date else ''
+
+        result = await notify_dashboard_order_created(
             order_number=order_number,
+            customer_name=customer_name,
+            customer_phone=customer_phone,
+            order_type=order_type,
             amount=amount,
             advance_paid=advance,
-            status=order.get('status', 'received'),
-            customer_name=order.get('customer_name', '')
+            delivery_date=delivery_str,
+            notes=order.get('description', '') or order.get('voice_instructions', '')
         )
         
         results.append({
