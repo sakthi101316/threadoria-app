@@ -120,16 +120,22 @@ async def notify_dashboard_order_created(order_number: str, customer_name: str, 
     }
     return await send_webhook("order_create", payload)
 
-async def notify_dashboard_order_updated(order_number: str, amount: float, advance_paid: float, status: str, customer_name: str = ""):
+async def notify_dashboard_order_updated(order_number: str, amount: float, advance_paid: float, status: str, customer_name: str = "", customer_phone: str = "", order_type: str = ""):
+    """Notify dashboard when order/payment is UPDATED"""
+    phone = customer_phone.replace("+", "").replace(" ", "") if customer_phone else ""
+    if phone and not phone.startswith("91"):
+        phone = "91" + phone
+    
     payload = {
         "order_number": order_number,
         "amount": int(amount) if amount else 0,
         "advance_paid": int(advance_paid) if advance_paid else 0,
         "status": status,
-        "customer_name": customer_name
+        "customer_name": customer_name,
+        "customer_phone": phone,
+        "item": order_type
     }
     return await send_webhook("order_update", payload)
-
 async def notify_dashboard_order_deleted(order_number: str, customer_name: str):
     payload = {
         "order_number": order_number,
@@ -1255,12 +1261,14 @@ async def resync_order_to_dashboard(order_id: str):
     status = order.get('status', 'received')
     
     result = await notify_dashboard_order_updated(
-        order_number=order_number,
-        amount=amount,
-        advance_paid=advance_paid,
-        status=status,
-        customer_name=customer_name
-    )
+    order_number=order_number,
+    amount=amount,
+    advance_paid=advance_paid,
+    status=status,
+    customer_name=customer_name,
+    customer_phone=order.get('customer_phone', ''),
+    order_type=order.get('order_type', '')
+)
     
     return {
         "order_id": order_id,
